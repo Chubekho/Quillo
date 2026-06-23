@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+.next/
+
+# Environment files — KHÔNG commit .env thật
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# Prisma
+backend/prisma/migrations/.migration_lock.toml
+
+# AWS / Infrastructure
+.aws/
+cdk.out/
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/settings.json
+*.swp
+
+# Test coverage
+coverage/
+
+# Docker
+.docker/

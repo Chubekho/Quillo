@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: quillo_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: quillo_dev
+      POSTGRES_USER: quillo
+      POSTGRES_PASSWORD: quillo_secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quillo -d quillo_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: quillo_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # LocalStack — emulate AWS SQS & S3 locally (không cần AWS account để dev)
+  localstack:
+    image: localstack/localstack:3
+    container_name: quillo_localstack
+    restart: unless-stopped
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3,sqs,secretsmanager
+      DEFAULT_REGION: ap-southeast-1
+      LOCALSTACK_AUTH_TOKEN: ""
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - ./infrastructure/scripts/localstack-init.sh:/etc/localstack/init/ready.d/init.sh
+
+volumes:
+  postgres_data:
+  localstack_data:
