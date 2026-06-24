@@ -54,7 +54,7 @@ app.use(`${API}/org`, orgRoutes);
 app.use(`${API}/personas`, personaRoutes);
 app.use(`${API}/campaigns`, campaignRoutes);
 app.use(`${API}/content`, contentRoutes);
-app.use(`${API}/exports`, exportRoutes);
+app.use(`${API}/content`, exportRoutes);
 app.use(`${API}/usage`, usageRoutes);
 
 // ── Error handlers ───────────────────────────────────────────

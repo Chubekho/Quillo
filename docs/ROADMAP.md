@@ -31,9 +31,9 @@
 - docs/: context files, GEMINI_INSTRUCTION.md, AGENT_LOG.md
 
 ### Day 3 ← ĐANG LÀM
-- [ ] Campaign controller + CRUD (thay stub 501)
-- [ ] Test end-to-end: register → persona → content → generate → poll job
-- [ ] Verify worker.ts chạy đúng với LocalStack SQS
+- [x] Campaign controller + CRUD (thay stub 501)
+- [x] Test end-to-end: register → persona → content → generate → poll job
+- [x] Verify worker.ts chạy đúng với LocalStack SQS
 
 ### Day 4
 - [ ] Export service: PDF/DOCX/HTML generate từ content body

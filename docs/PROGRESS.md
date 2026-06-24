@@ -7,7 +7,7 @@
 
 ## Trạng thái hiện tại
 
-**Sprint:** Tuần 1 / 2 | **Ngày:** Day 3 ✅ DONE  
+**Sprint:** Tuần 1 / 2 | **Ngày:** Day 4 ✅ DONE  
 **Branch:** main  
 **Last updated:** 2026-06-24
 
@@ -52,29 +52,39 @@
 - E2E test verified: Register → Login → Persona → Content → Generate (QUEUED) → Poll job
 - Worker verified: SQS polling active, nhận message, update DB đúng
 
+**[Backend — Day 4]**
+- BEDROCK_MOCK=true: mockInvoke() + buildMockContent() trong bedrock.service.ts
+  - Persona-aware mock copy theo content type (BLOG_POST/SOCIAL_MEDIA/EMAIL/AD_COPY)
+  - sleep(800ms) giả lập latency, đúng shape GenerationResult mà worker.ts parse
+  - Worker không bị sửa, tắt mock chỉ cần đổi env var
+- Export service: generateHtml/generatePdf/generateDocx/exportContent
+  - PDF: pdfkit parse marked tokens (heading/paragraph/list/blockquote)
+  - DOCX: html-to-docx, HTML: marked + inline CSS
+  - Upload S3 LocalStack, presigned URL TTL 1h
+  - Multi-tenant filter organizationId mọi query, error → status=FAILED
+- Export controller + route: POST /:id/export, GET /:id/exports, mount vào app.ts
+- Fix S3Client: thêm forcePathStyle: true (fix ENOTFOUND virtual-hosted URL)
+- E2E verified: generate (mock) → COMPLETED → export PDF/DOCX/HTML → download OK
 ---
 
 ## Đang bị block 🔴
 
-- **Bedrock API invocation**: AWS account chưa được authorize cho Anthropic models
-  - Error: "Operation not allowed"
-  - AWS Support case đã tạo, đang chờ phản hồi
-  - Không ảnh hưởng Day 4 tasks (Export service)
+- **Bedrock API invocation**: free tier không hỗ trợ technical, sẽ mượn account team có quyền Bedrock; tạm dùng BEDROCK_MOCK.
 
 ---
 
-## Tiếp theo 🟡 (Day 4)
+## Tiếp theo 🟡 (Day 5)
 
-1. `export.service.ts` — PDF/DOCX/HTML generate từ content body → upload S3 → presigned URL
-2. Export controller + route
-3. Login.tsx + Register.tsx pages (có thể advance nếu export xong sớm)
+1. Usage tracking: GET /usage theo tháng, per model
+2. Quota enforcement: block generate khi vượt monthlyTokenQuota
+3. Org settings: update quota, xem plan
 
 ---
 
 ## Known Issues ⚠️
 
-- Bedrock blocked: AWS account authorization pending support case
-- Worker cần SQS queue tồn tại trước khi start (chạy `setup-local.sh`)
+- Bedrock blocked: dùng BEDROCK_MOCK=true tạm thời, sẽ mượn account team bootcamp có quyền Bedrock
+- Worker cần SQS queue tồn tại trước khi start (chạy setup-local.sh)
 
 ---
 
@@ -89,3 +99,6 @@
 | Lambda Worker tách khỏi API | Không block request khi AI generate |
 | BedrockRuntimeClient tách endpoint riêng | LocalStack không emulate Bedrock |
 | AWS_REGION=us-east-1 cho Bedrock | Cross-region inference profile us.* chỉ support US regions |
+| Export sync (không qua SQS) | Text export nhanh, không cần queue |
+| S3 forcePathStyle: true | LocalStack không support virtual-hosted style |
+| BEDROCK_MOCK flag | Unblock pipeline, tắt khi có account thật, không sửa code |

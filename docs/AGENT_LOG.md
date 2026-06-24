@@ -110,3 +110,32 @@ Kết quả: DONE
 Ghi chú: Đã kiểm chứng qua middleware rằng BedrockRuntimeClient gửi request đúng tới AWS endpoint, còn SQSClient vẫn gửi tới LocalStack.
 ---
 
+### [2026-06-24 20:48] Bedrock mock mode — unblock pipeline khi chưa có quyền Bedrock
+Làm gì: Thêm mock mode vào `bedrock.service.ts` (BEDROCK_MOCK=true) trả persona-aware marketing copy giả lập đúng shape GenerationResult mà worker.ts parse, kèm sleep(800ms) latency. Thêm biến BEDROCK_MOCK vào .env + .env.example.
+
+Files thay đổi:
+- backend/src/services/ai/bedrock.service.ts — thêm mockInvoke() + buildMockContent() trả mock content theo content type/persona/operation
+- backend/.env — thêm BEDROCK_MOCK=true
+- backend/.env.example — thêm BEDROCK_MOCK=true
+
+Kết quả: DONE
+
+Ghi chú: Worker.ts không bị thay đổi. Mock content có heading markdown cho BLOG_POST, hashtag cho SOCIAL_MEDIA, subject/preheader cho EMAIL, CTA cho AD_COPY.
+---
+
+### [2026-06-24 21:03] Export service — PDF/DOCX/HTML từ content → S3 → presigned URL
+Làm gì: Tạo ExportService (generateHtml/generatePdf/generateDocx/exportContent) + ExportController (POST create, GET list) + cập nhật export.routes.ts mount dưới `/content`. Cài marked, pdfkit, html-to-docx. Thêm type declaration cho html-to-docx.
+
+Files thay đổi:
+- backend/src/services/export.service.ts — tạo mới, xử lý generate buffer theo format, upload S3, presigned URL TTL 1h
+- backend/src/controllers/export.controller.ts — tạo mới, validate format ∈ [PDF,DOCX,HTML], delegate service
+- backend/src/routes/export.routes.ts — thay stub 501, POST /:id/export + GET /:id/exports
+- backend/src/app.ts — mount exportRoutes dưới /api/v1/content
+- backend/src/types/html-to-docx.d.ts — tạo mới, type declaration cho html-to-docx
+- backend/package.json — thêm marked, pdfkit, html-to-docx, @types/pdfkit
+
+Kết quả: DONE
+
+Ghi chú: Export sync trong request (không qua SQS). PDF dùng pdfkit parse marked tokens (heading/paragraph/list/blockquote/code/hr). Multi-tenant filter organizationId mọi query.
+---
+

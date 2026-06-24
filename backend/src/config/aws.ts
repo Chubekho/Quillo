@@ -5,6 +5,7 @@ import { SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 
 const awsConfig = {
   region: process.env.AWS_REGION || 'ap-southeast-1',
+  forcePathStyle: true,
   // Khi dev local với LocalStack, override endpoint
   ...(process.env.AWS_ENDPOINT_URL
     ? { endpoint: process.env.AWS_ENDPOINT_URL }
