@@ -6,6 +6,19 @@
 
 ---
 
+## Tài liệu liên quan
+| File | Mục đích |
+|------|----------|
+| docs/PROGRESS.md | Tiến độ hiện tại, task tiếp theo — đọc trước khi làm |
+| docs/ROADMAP.md | Lộ trình 2 tuần, feature scope, milestones |
+| docs/BACKEND_CONTEXT.md | API endpoints, patterns, files đã/chưa implement |
+| docs/FRONTEND_CONTEXT.md | Component plan, data flow |
+| docs/INFRASTRUCTURE_CONTEXT.md | AWS services, local setup |
+| docs/GEMINI_INSTRUCTION.md | Standing orders cho agent |
+| docs/AGENT_LOG.md | Append-only task log |
+
+---
+
 ## Mục tiêu dự án
 SaaS platform cho phép doanh nghiệp tự động hóa sản xuất nội dung marketing
 bằng Generative AI (Amazon Bedrock / Claude). Điểm khác biệt cốt lõi: **Brand Persona**
@@ -55,6 +68,15 @@ quillo/
 │       ├── setup-local.sh       ← One-shot setup script
 │       └── localstack-init.sh   ← LocalStack queue/bucket init
 └── docker-compose.yml           ← PostgreSQL + Redis + LocalStack
+└── docs/
+    ├── QUILLO_PROJECT_CONTEXT.md
+    ├── BACKEND_CONTEXT.md
+    ├── FRONTEND_CONTEXT.md
+    ├── INFRASTRUCTURE_CONTEXT.md
+    ├── PROGRESS.md
+    ├── GEMINI_INSTRUCTION.md
+    └── ROADMAP.md
+    └── AGENT_LOG.md
 
 ---
 
@@ -140,28 +162,7 @@ BEDROCK_EDIT_MODEL=us.anthropic.claude-haiku-4-5
 
 ---
 
-## Tiến độ (Day-by-Day Plan)
-
-### Tuần 1 — Foundation
-- [x] **Day 1:** Scaffold monorepo, Docker, schema Prisma, seed
-- [x] **Day 1-2:** Backend config (DB, Redis, AWS, Logger), Express app
-- [x] **Day 2:** Auth controller (register/login/refresh/logout/me), JWT
-- [x] **Day 2:** Brand Persona CRUD controller + Redis cache
-- [x] **Day 2:** Content controller (CRUD + AI operations → SQS)
-- [x] **Day 2:** worker.ts (SQS consumer → Bedrock → DB)
-- [ ] **Day 3:** Campaign controller + CRUD (stub hiện tại)
-- [ ] **Day 3:** Test end-to-end: register → tạo persona → tạo content → generate → poll
-- [ ] **Day 4:** Export service (PDF/DOCX/HTML → S3 presigned URL)
-- [ ] **Day 4-5:** Usage tracking dashboard + quota enforcement
-
-### Tuần 2 — Features & Deploy
-- [ ] **Day 6-7:** React frontend: Auth pages, Dashboard layout
-- [ ] **Day 8:** Persona builder UI
-- [ ] **Day 9:** Content editor UI với polling
-- [ ] **Day 10:** Export UI
-- [ ] **Day 11:** CloudWatch setup, WAF, Secrets Manager
-- [ ] **Day 12-13:** AWS deploy (EC2 + RDS + Lambda worker)
-- [ ] **Day 14:** CI/CD, demo prep
+> Xem tiến độ chi tiết tại docs/PROGRESS.md
 
 ---
 
