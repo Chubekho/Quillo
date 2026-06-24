@@ -153,7 +153,7 @@ export class AuthController {
     const accessToken = jwt.sign(
       { userId, orgId, role, email },
       process.env.JWT_SECRET!,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' },
+      { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'] },
     );
 
     const rawRefresh = uuidv4() + uuidv4(); // 72-char opaque token
