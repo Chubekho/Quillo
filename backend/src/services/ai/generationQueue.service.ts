@@ -37,8 +37,6 @@ export class GenerationQueueService {
       const cmd = new SendMessageCommand({
         QueueUrl: AWS_CONFIG.SQS_QUEUE_URL,
         MessageBody: JSON.stringify(message),
-        MessageGroupId: orgId, // FIFO queue: group by org để không block nhau
-        MessageDeduplicationId: job.id, // idempotency
       });
 
       const result = await sqsClient.send(cmd);

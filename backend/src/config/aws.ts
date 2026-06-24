@@ -24,6 +24,9 @@ const bedrockConfig = {
   },
 };
 
+// Xóa AWS_ENDPOINT_URL khỏi process.env để BedrockRuntimeClient không tự động dùng LocalStack
+delete process.env.AWS_ENDPOINT_URL;
+
 export const sqsClient = new SQSClient(awsConfig);
 export const s3Client = new S3Client(awsConfig);
 export const bedrockClient = new BedrockRuntimeClient(bedrockConfig);

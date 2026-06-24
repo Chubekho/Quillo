@@ -3,6 +3,13 @@ import { prisma } from '../config/database';
 import { AppError } from '../middlewares/errorHandler';
 import { cacheGet, cacheSet, cacheDel, CACHE_TTL } from '../config/redis';
 
+const normalizeStringArray = (val: unknown): string[] | undefined => {
+  if (!val) return undefined;
+  if (Array.isArray(val)) return val.map(String);
+  if (typeof val === 'string') return [val];
+  return undefined;
+};
+
 export class PersonaController {
   // GET /personas
   list = async (req: Request, res: Response, next: NextFunction) => {
@@ -41,7 +48,7 @@ export class PersonaController {
           formalityLevel: formalityLevel || 3,
           keywords: keywords || [],
           avoidWords: avoidWords || [],
-          exampleOutputs: exampleOutputs || [],
+          exampleOutputs: normalizeStringArray(exampleOutputs) || [],
           isDefault: isDefault || false,
         },
       });
@@ -63,9 +70,13 @@ export class PersonaController {
   update = async (req: Request, res: Response, next: NextFunction) => {
     try {
       await this._findOwned(req.params.id, req.user!.orgId);
+      const updateData = { ...req.body };
+      if ('exampleOutputs' in updateData) {
+        updateData.exampleOutputs = normalizeStringArray(updateData.exampleOutputs);
+      }
       const persona = await prisma.brandPersona.update({
         where: { id: req.params.id },
-        data: req.body,
+        data: updateData,
       });
       await cacheDel(`personas:${req.user!.orgId}`);
       res.json(persona);
