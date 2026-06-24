@@ -26,6 +26,7 @@ src/
 ├── controllers/
 │   ├── auth.controller.ts    ← register (tạo org+user transaction), login,
 │   │                            refresh (token rotation), logout, me
+│   ├── campaign.controller.ts← CRUD campaigns
 │   ├── content.controller.ts ← list(filter+paginate), create, get, update,
 │   │                            remove(soft-archive), generate/rewrite/expand/shorten
 │   │                            (→ GenerationQueueService), getJobStatus, versions
@@ -36,11 +37,13 @@ src/
 │   ├── errorHandler.ts       ← AppError class + Prisma P2002/P2025 mapping
 │   └── notFound.ts
 ├── routes/                   ← 8 files, tất cả dùng authenticate()
-├── services/ai/
-│   ├── generationQueue.service.ts ← enqueue(): tạo DB job → gửi SQS message
-│   └── bedrock.service.ts         ← invoke(): select model by operation,
-│                                     buildPrompt() per ContentType + operation
-│                                     4 operations: generate/rewrite/expand/shorten
+├── services/
+│   ├── campaign.service.ts   ← xử lý logic CRUD cho campaigns, filter orgId
+│   └── ai/
+│       ├── generationQueue.service.ts ← enqueue(): tạo DB job → gửi SQS message
+│       └── bedrock.service.ts         ← invoke(): select model by operation,
+│                                         buildPrompt() per ContentType + operation
+│                                         4 operations: generate/rewrite/expand/shorten
 ├── app.ts    ← helmet, cors, rateLimit, compression, morgan, routes
 ├── server.ts ← bootstrap(): prisma.$connect, redis.ping, app.listen
 └── worker.ts ← pollLocal() (dev) / handler() (Lambda prod) ← processMessage(): check quota → load piece+persona → invoke Bedrock → transaction(version+job+usage+quota)

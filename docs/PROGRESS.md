@@ -7,9 +7,9 @@
 
 ## Trạng thái hiện tại
 
-**Sprint:** Tuần 1 / 2 | **Ngày:** Day 3  
+**Sprint:** Tuần 1 / 2 | **Ngày:** Day 3 ✅ DONE  
 **Branch:** main  
-**Last updated:** 2025-01-XX
+**Last updated:** 2026-06-24
 
 ---
 
@@ -34,33 +34,46 @@
 - useJobPoller.ts: polling hook mỗi 2.5s, auto-stop khi job xong
 
 **[Infrastructure — Session 1-2]**
-- setup-local.sh: one-shot setup script
+- setup-local.sh: one-shot setup script (tạo lại Day 3)
 - Fix LocalStack SQS URL: `http://localhost:4566/000000000000/{queue}`
+- Fix localstack-init.sh: đổi queue-url format từ sqs.region.localhost.localstack.cloud → localhost:4566
 
 **[Docs — Session 2]**
 - docs/: 5 context files (Project, Backend, Frontend, Infra, Progress)
 - docs/GEMINI_INSTRUCTION.md + docs/AGENT_LOG.md
 
+**[Backend — Day 3]**
+- Campaign CRUD: campaign.service.ts + campaign.controller.ts + routes
+  - GET /campaigns, POST /campaigns, GET /campaigns/:id, PATCH /campaigns/:id, DELETE /campaigns/:id
+  - Multi-tenant filter đúng, soft delete → status=ARCHIVED
+- Fix persona.controller.ts: normalize exampleOutputs String → String[]
+- Fix generationQueue.service.ts: xóa MessageDeduplicationId (FIFO-only param)
+- Fix aws.ts: BedrockRuntimeClient không dùng LocalStack endpoint (delete AWS_ENDPOINT_URL)
+- E2E test verified: Register → Login → Persona → Content → Generate (QUEUED) → Poll job
+- Worker verified: SQS polling active, nhận message, update DB đúng
+
 ---
 
 ## Đang bị block 🔴
 
-*(trống — điền khi có issue mới)*
+- **Bedrock API invocation**: AWS account chưa được authorize cho Anthropic models
+  - Error: "Operation not allowed"
+  - AWS Support case đã tạo, đang chờ phản hồi
+  - Không ảnh hưởng Day 4 tasks (Export service)
 
 ---
 
-## Tiếp theo 🟡
+## Tiếp theo 🟡 (Day 4)
 
-1. `campaign.controller.ts` + routes (stub hiện trả 501)
-2. `export.service.ts` — PDF/DOCX/HTML → S3 presigned URL
-3. Login.tsx + Register.tsx pages
-4. Test end-to-end: register → persona → content → generate → poll job
+1. `export.service.ts` — PDF/DOCX/HTML generate từ content body → upload S3 → presigned URL
+2. Export controller + route
+3. Login.tsx + Register.tsx pages (có thể advance nếu export xong sớm)
 
 ---
 
 ## Known Issues ⚠️
 
-- Bedrock không có LocalStack emulation — cần AWS credentials thật để test AI
+- Bedrock blocked: AWS account authorization pending support case
 - Worker cần SQS queue tồn tại trước khi start (chạy `setup-local.sh`)
 
 ---
@@ -74,3 +87,5 @@
 | Prisma v7 + adapter-pg | Không downgrade, học đúng version mới |
 | Redis cache persona 30 phút | Persona ít thay đổi, giảm DB load |
 | Lambda Worker tách khỏi API | Không block request khi AI generate |
+| BedrockRuntimeClient tách endpoint riêng | LocalStack không emulate Bedrock |
+| AWS_REGION=us-east-1 cho Bedrock | Cross-region inference profile us.* chỉ support US regions |

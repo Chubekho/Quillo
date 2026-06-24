@@ -70,3 +70,43 @@
 - Prisma v7 cần thêm @prisma/adapter-pg — đã cài
 - localhost:5173 cần Gemini verify chạy được sau khi tạo xong bootstrap files
 ---
+
+### [2026-06-24 11:15] Implement Campaign Controller + CRUD
+Làm gì: Tạo CampaignService và CampaignController hỗ trợ CRUD campaign với filter multi-tenant theo organizationId, thay thế stub 501 trong campaign.routes.ts.
+
+Files thay đổi:
+
+backend/src/services/campaign.service.ts — tạo mới service xử lý logic CRUD cho campaign
+backend/src/controllers/campaign.controller.ts — tạo mới controller nhận request HTTP và gọi service
+backend/src/routes/campaign.routes.ts — thay thế stub 501 bằng routes thực tế trỏ tới controller
+
+Kết quả: DONE
+
+Ghi chú: Đảm bảo multi-tenant filter theo organizationId trong mọi thao tác, soft delete set status = ARCHIVED.
+---
+
+### [2026-06-24 13:57] Tạo lại setup-local.sh + Fix localstack-init.sh
+Làm gì: Tạo lại script one-shot `setup-local.sh` khởi tạo Docker Compose, chờ services ready, tạo SQS queues/S3 buckets, cài đặt npm dependencies và chạy Prisma migrate/seed. Sửa lỗi định dạng URL của SQS trong `localstack-init.sh` thành `http://localhost:4566`.
+
+Files thay đổi:
+
+infrastructure/scripts/setup-local.sh — tạo mới script one-shot setup local đầy đủ các bước theo yêu cầu
+infrastructure/scripts/localstack-init.sh — sửa định dạng queue-url từ sqs.region.localhost.localstack.cloud thành localhost:4566
+
+Kết quả: DONE
+
+Ghi chú: Các script đã được thiết lập chuẩn xác, sẵn sàng cho việc khởi tạo môi trường dev local.
+---
+
+### [2026-06-24 15:32] Fix BedrockRuntimeClient không dùng LocalStack endpoint
+Làm gì: Sửa lỗi BedrockRuntimeClient tự động nhận endpoint LocalStack từ biến môi trường AWS_ENDPOINT_URL bằng cách xóa biến này khỏi process.env sau khi cấu hình awsConfig đã được khởi tạo. Điều này giúp Bedrock gọi trực tiếp AWS thật, trong khi các dịch vụ khác (SQS, S3, Secrets Manager) vẫn giữ nguyên kết nối LocalStack.
+
+Files thay đổi:
+
+backend/src/config/aws.ts — Xóa biến môi trường AWS_ENDPOINT_URL sau khi cấu hình cho LocalStack đã được thiết lập
+
+Kết quả: DONE
+
+Ghi chú: Đã kiểm chứng qua middleware rằng BedrockRuntimeClient gửi request đúng tới AWS endpoint, còn SQSClient vẫn gửi tới LocalStack.
+---
+
