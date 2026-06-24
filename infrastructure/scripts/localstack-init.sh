@@ -3,7 +3,7 @@
 
 echo "==> Quillo: Khởi tạo AWS resources trên LocalStack..."
 
-REGION=ap-southeast-1
+REGION=us-east-1
 ENDPOINT=http://localhost:4566
 
 # ── S3 Buckets ──────────────────────────────────────────────
@@ -29,7 +29,7 @@ awslocal sqs create-queue \
   --region $REGION
 
 DLQ_ARN=$(awslocal sqs get-queue-attributes \
-  --queue-url http://sqs.$REGION.localhost.localstack.cloud:4566/000000000000/quillo-generation-dlq \
+  --queue-url http://localhost:4566/000000000000/quillo-generation-dlq \
   --attribute-names QueueArn \
   --query 'Attributes.QueueArn' \
   --output text)
@@ -45,7 +45,7 @@ awslocal sqs create-queue \
   }"
 
 echo "  Queue ARN: $(awslocal sqs get-queue-attributes \
-  --queue-url http://sqs.$REGION.localhost.localstack.cloud:4566/000000000000/quillo-generation-queue \
+  --queue-url http://localhost:4566/000000000000/quillo-generation-queue \
   --attribute-names QueueArn --query 'Attributes.QueueArn' --output text)"
 
 echo "==> Quillo: LocalStack init done ✓"
