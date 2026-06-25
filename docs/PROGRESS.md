@@ -7,7 +7,7 @@
 
 ## Trạng thái hiện tại
 
-**Sprint:** Tuần 1 / 2 | **Ngày:**  Day 5 ✅ DONE
+**Sprint:** Tuần 2 / 2 | **Ngày:** Day 6 ✅ DONE
 **Branch:** main  
 **Last updated:** 2026-06-25
 
@@ -80,6 +80,16 @@
   - PATCH: chỉ OWNER/ADMIN, validate quota >= 0, plan hợp lệ
   - Role check trong controller, MEMBER/VIEWER → 403
 - E2E verified: usage update sau generate, quota reject 429, org update đúng role
+**[Frontend — Day 6]**
+- ProtectedRoute.tsx: kiểm tra isAuthenticated, hydrate user qua fetchMe() khi có token nhưng chưa có user (reload trang), spinner trong lúc chờ, redirect /login kèm location.state
+- App.tsx: cấu trúc routing đầy đủ — public (/login, /register), protected (/, /content, /personas, /campaigns, /usage) bọc trong ProtectedRoute + AppLayout, catch-all → /
+- Placeholder pages: Dashboard, ContentList, PersonaList, CampaignList, UsagePage (stub, chưa implement nội dung)
+- Login.tsx: react-hook-form + zod, validate email format + password ≥ 8 ký tự, toast lỗi API, redirect navigate(from, { replace: true })
+- Register.tsx: fields orgName/name/email/password/confirmPassword, zod .refine() so khớp password, confirmPassword không gửi lên API, auto-login sau register → redirect /
+- AppLayout.tsx: layout 2 cột responsive, sidebar với NavLink highlight active, lucide-react icons, hiển thị user.name + org.name từ auth.store, logout gọi authApi.logout() → clear store → /login (lỗi vẫn clear)
+- vite-env.d.ts: thêm reference vite/client, fix lỗi TS2339 ImportMeta
+- Fix: navigate(from, { replace: true }) trong Login — tránh Back button quay lại /login sau khi đã đăng nhập
+
 ---
 
 ## Đang bị block 🔴
@@ -88,11 +98,10 @@
 
 ---
 
-## Tiếp theo 🟡 (Day 6)
+## Tiếp theo 🟡 (Day 7)
 
-1. Login.tsx + Register.tsx (form + validation + redirect)
-2. AppLayout.tsx: sidebar navigation
-3. ProtectedRoute hoàn chỉnh
+1. Dashboard.tsx: token usage widget, recent content list, quick actions
+2. ContentList.tsx: list + filter by type/status/campaign
 
 ---
 
@@ -119,3 +128,5 @@
 | BEDROCK_MOCK flag | Unblock pipeline, tắt khi có account thật, không sửa code |
 | checkQuota() dùng chung API + worker | Không duplicate logic, tắt DLQ retry khi quota exceeded |
 | Role check trong controller (không middleware) | Trả 403 message rõ ràng, flexible hơn |
+| react-hook-form + zod cho mọi form | Type-safe validation, ít boilerplate, tái dùng pattern cho PersonaEditor Day 8 |
+| navigate(from, { replace: true }) sau login | Tránh Back button quay lại /login, UX chuẩn |

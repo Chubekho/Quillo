@@ -20,48 +20,55 @@ React 18 + Vite + TypeScript. Đọc QUILLO_PROJECT_CONTEXT.md trước.
 
 ## Files đã implement ✅
 src/
-├── services/api.ts       ← Axios instance + interceptor auto-refresh token
-│                           Typed methods: authApi, personaApi, contentApi, campaignApi
+├── App.tsx                    ← Router setup: public/protected/catch-all, QueryClient, Toaster
+├── main.tsx                   ← Entry point
+├── services/api.ts            ← Axios instance + interceptor auto-refresh token
+│                                 Typed methods: authApi, personaApi, contentApi, campaignApi
 ├── store/
-│   └── auth.store.ts     ← Zustand: { user, isAuthenticated, login, register,
-│                                       logout, fetchMe }
-│                           Lưu tokens vào localStorage
-└── hooks/
-└── useJobPoller.ts   ← Poll GET /content/:id/jobs/:jobId mỗi 2.5s
-Returns: { status, result, error }
-Auto-stop khi status=completed|failed
+│   └── auth.store.ts          ← Zustand: { user, isAuthenticated, login, register,
+│                                           logout, fetchMe }
+│                                 Lưu tokens vào localStorage
+├── hooks/
+│   └── useJobPoller.ts        ← Poll GET /content/:id/jobs/:jobId mỗi 2.5s
+│                                 Returns: { status, result, error }
+│                                 Auto-stop khi status=completed|failed
+├── components/
+│   ├── ProtectedRoute.tsx     ← auth guard: check isAuthenticated, hydrate fetchMe()
+│   │                             on reload, spinner + redirect /login kèm location.state
+│   └── layout/
+│       └── AppLayout.tsx      ← shell 2 cột: sidebar NavLink + Outlet, user/org info,
+│                                 logout flow, responsive mobile toggle
+└── pages/
+    ├── Login.tsx              ← form react-hook-form+zod, redirect navigate(from,{replace:true})
+    ├── Register.tsx           ← form orgName/name/email/password, confirmPassword client-only
+    ├── Dashboard.tsx          ← placeholder stub (implement Day 7)
+    ├── ContentList.tsx        ← placeholder stub (implement Day 7)
+    ├── PersonaList.tsx        ← placeholder stub (implement Day 8)
+    ├── CampaignList.tsx       ← placeholder stub (implement Day 10)
+    └── UsagePage.tsx          ← placeholder stub (implement Day 10)
 ---
 
 ## Files CẦN implement ❌
 src/
 ├── pages/
-│   ├── Login.tsx              ← form email+password → authStore.login()
-│   ├── Register.tsx           ← form email+password+name+orgName
-│   ├── Dashboard.tsx          ← overview: content count, token usage, recent
-│   ├── ContentList.tsx        ← list + filter by type/status/campaign
 │   ├── ContentEditor.tsx      ← MAIN PAGE: brief input, generate button,
 │   │                             polling spinner, content display, edit actions
-│   ├── PersonaList.tsx        ← list personas với badge "default"
 │   ├── PersonaEditor.tsx      ← form tạo/sửa persona (tone, voice, keywords...)
 │   └── Campaigns.tsx          ← list campaigns, tạo mới
-├── components/
-│   ├── layout/
-│   │   ├── AppLayout.tsx      ← sidebar nav + main content area
-│   │   └── Sidebar.tsx
-│   ├── content/
-│   │   ├── ContentCard.tsx    ← card hiển thị trong list
-│   │   ├── GeneratePanel.tsx  ← brief input + type selector + persona picker
-│   │   ├── ContentDisplay.tsx ← hiển thị generated text + action buttons
-│   │   └── VersionHistory.tsx ← list versions, restore button
-│   ├── persona/
-│   │   └── PersonaForm.tsx    ← multi-field form cho persona
-│   └── ui/
-│       ├── Button.tsx
-│       ├── Input.tsx
-│       ├── Select.tsx
-│       ├── Badge.tsx
-│       └── Spinner.tsx        ← dùng khi polling
-└── App.tsx                    ← Router setup + QueryClient + protected routes
+└── components/
+    ├── content/
+    │   ├── ContentCard.tsx    ← card hiển thị trong list
+    │   ├── GeneratePanel.tsx  ← brief input + type selector + persona picker
+    │   ├── ContentDisplay.tsx ← hiển thị generated text + action buttons
+    │   └── VersionHistory.tsx ← list versions, restore button
+    ├── persona/
+    │   └── PersonaForm.tsx    ← multi-field form cho persona
+    └── ui/
+        ├── Button.tsx
+        ├── Input.tsx
+        ├── Select.tsx
+        ├── Badge.tsx
+        └── Spinner.tsx        ← dùng khi polling
 
 ---
 

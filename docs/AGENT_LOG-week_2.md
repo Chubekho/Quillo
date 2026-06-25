@@ -54,3 +54,26 @@ frontend/src/components/layout/AppLayout.tsx — xóa file placeholder cũ khôn
 Kết quả: DONE
 
 Ghi chú: Layout responsive hỗ trợ mobile toggle menu, đảm bảo logout thành công hoặc lỗi vẫn clear local state để không kẹt user.
+
+---
+
+### [Task Day 6 - 2026-06-25 16:11] Cập nhật docs sau khi hoàn thành Day 6 frontend
+Làm gì: Cập nhật 3 file docs phản ánh đúng trạng thái sau khi hoàn thành toàn bộ Day 6 frontend (ProtectedRoute, App.tsx routing, Login, Register, AppLayout).
+
+Files thay đổi:
+
+docs/GEMINI_INSTRUCTION.md — sửa step 3 trỏ đến AGENT_LOG-week_2.md là file active, tham khảo week_1 nếu cần tra cứu lịch sử tuần 1.
+docs/PROGRESS.md — cập nhật sprint sang Tuần 2 / Day 6, thêm section [Frontend — Day 6] vào Đã hoàn thành, cập nhật Tiếp theo sang Day 7, thêm 2 quyết định kỹ thuật (react-hook-form+zod, navigate replace).
+docs/FRONTEND_CONTEXT.md — thêm ProtectedRoute, AppLayout, Login, Register, placeholder pages vào section ✅; xóa các file đã implement khỏi ❌ và cập nhật ghi chú placeholder cho Dashboard/ContentList/PersonaList/CampaignList.
+
+Kết quả: DONE
+
+---
+
+### [2026-06-25 16:24] Cập nhật FRONTEND_CONTEXT.md sau Day 6
+Làm gì: Di chuyển files đã implement từ ❌ sang ✅ dựa theo cấu trúc thực tế trên disk (find frontend/src -name "*.tsx"). Thêm App.tsx, main.tsx, ProtectedRoute.tsx, components/layout/AppLayout.tsx, và tất cả pages stub (Login, Register, Dashboard, ContentList, PersonaList, CampaignList, UsagePage) vào block ✅. Xóa các dòng tương ứng khỏi block ❌.
+
+Files thay đổi:
+  docs/FRONTEND_CONTEXT.md — cập nhật trạng thái implement
+
+Kết quả: DONE

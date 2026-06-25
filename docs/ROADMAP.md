@@ -41,18 +41,18 @@
 - [x] Export controller + route
 
 ### Day 5
-- [ ] Usage tracking: GET /usage theo tháng, per model
-- [ ] Quota enforcement: block generate khi vượt monthlyTokenQuota
-- [ ] Org settings: update quota, xem plan
+- [x] Usage tracking: GET /usage theo tháng, per model
+- [x] Quota enforcement: block generate khi vượt monthlyTokenQuota
+- [x] Org settings: update quota, xem plan
 
 ---
 
 ## Tuần 2 — Frontend & Deploy
 
 ### Day 6
-- [ ] Login.tsx + Register.tsx (form + validation + redirect)
-- [ ] AppLayout.tsx: sidebar navigation
-- [ ] ProtectedRoute hoàn chỉnh
+- [x] Login.tsx + Register.tsx (form + validation + redirect)
+- [x] AppLayout.tsx: sidebar navigation
+- [x] ProtectedRoute hoàn chỉnh
 
 ### Day 7
 - [ ] Dashboard.tsx: token usage widget, recent content list, quick actions

@@ -3,12 +3,12 @@
 ## Đọc trước khi làm bất kỳ task nào
 1. Đọc docs/QUILLO_PROJECT_CONTEXT.md — kiến trúc tổng thể
 2. Đọc docs/PROGRESS.md — tiến độ hiện tại và những gì đang bị block
-3. Đọc docs/AGENT_LOG.md — những gì đã làm gần nhất trong session này
+3. Đọc docs/AGENT_LOG-week_2.md — log tuần 2 hiện tại (active). Tham khảo thêm docs/AGENT_LOG-week_1.md nếu cần tra cứu quyết định kỹ thuật từ tuần 1.
 4. Đọc context file của thư mục liên quan (docs/BACKEND_CONTEXT.md hoặc
    docs/FRONTEND_CONTEXT.md) tùy theo task
 
 ## Sau khi hoàn thành mỗi task
-Append vào docs/AGENT_LOG.md theo đúng format này — không thay đổi format:
+Append vào docs/AGENT_LOG-week_2.md theo đúng format này — không thay đổi format:
 [YYYY-MM-DD HH:MM] <Tên task ngắn gọn>
 Làm gì: Mô tả 1-2 câu task vừa làm
 
