@@ -28,6 +28,13 @@ export interface UsageSummary {
   byModel: ModelUsage[];
 }
 
+export interface QuotaCheckResult {
+  allowed: boolean;
+  used: number;
+  quota: number | null;
+  remaining: number | null;
+}
+
 // ── Helpers ───────────────────────────────────────────────────
 
 /** Returns [start, end) of the current calendar month in UTC. */
@@ -146,6 +153,29 @@ export class UsageService {
       percentUsed,
       byModel,
     };
+  }
+  /**
+   * Check whether `orgId` is within its monthly token quota.
+   * - quota null  → unlimited, always allowed.
+   * - used >= quota → blocked (allowed=false).
+   */
+  async checkQuota(orgId: string): Promise<QuotaCheckResult> {
+    const [totals, org] = await Promise.all([
+      this.getCurrentMonthUsage(orgId),
+      prisma.organization.findUnique({
+        where: { id: orgId },
+        select: { monthlyTokenQuota: true },
+      }),
+    ]);
+
+    const quota: number | null = org?.monthlyTokenQuota ?? null;
+    const used = totals.totalTokens;
+    const remaining = quota !== null ? Math.max(0, quota - used) : null;
+
+    // null quota = unlimited
+    const allowed = quota === null ? true : used < quota;
+
+    return { allowed, used, quota, remaining };
   }
 }
 

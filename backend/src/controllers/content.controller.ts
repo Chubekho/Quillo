@@ -2,9 +2,22 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/database';
 import { AppError } from '../middlewares/errorHandler';
 import { GenerationQueueService } from '../services/ai/generationQueue.service';
+import { usageService } from '../services/usage.service';
 import { ContentStatus } from '@prisma/client';
 
 const queueService = new GenerationQueueService();
+
+/** Throw 429 if the org has exceeded its monthly token quota. */
+async function assertQuota(orgId: string): Promise<void> {
+  const q = await usageService.checkQuota(orgId);
+  if (!q.allowed) {
+    throw new AppError(
+      429,
+      `Quota exceeded: đã dùng ${q.used}/${q.quota} tokens tháng này`,
+      'QUOTA_EXCEEDED',
+    );
+  }
+}
 
 export class ContentController {
   // GET /content
@@ -97,6 +110,7 @@ export class ContentController {
   // POST /content/:id/generate — đẩy job generate vào SQS
   generate = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      await assertQuota(req.user!.orgId);
       const piece = await this._findOwned(req.params.id, req.user!.orgId);
       const job = await queueService.enqueue({
         contentId: piece.id,
@@ -112,6 +126,7 @@ export class ContentController {
   // POST /content/:id/rewrite
   rewrite = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      await assertQuota(req.user!.orgId);
       const piece = await this._findOwned(req.params.id, req.user!.orgId);
       const { instruction } = req.body; // optional: "viết lại theo hướng tích cực hơn"
       const job = await queueService.enqueue({
@@ -127,6 +142,7 @@ export class ContentController {
   // POST /content/:id/expand
   expand = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      await assertQuota(req.user!.orgId);
       const piece = await this._findOwned(req.params.id, req.user!.orgId);
       const job = await queueService.enqueue({
         contentId: piece.id,
@@ -140,6 +156,7 @@ export class ContentController {
   // POST /content/:id/shorten
   shorten = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      await assertQuota(req.user!.orgId);
       const piece = await this._findOwned(req.params.id, req.user!.orgId);
       const job = await queueService.enqueue({
         contentId: piece.id,

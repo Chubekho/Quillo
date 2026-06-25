@@ -14,6 +14,7 @@ import {
 import { prisma } from './config/database';
 import { sqsClient, AWS_CONFIG } from './config/aws';
 import { BedrockService } from './services/ai/bedrock.service';
+import { usageService } from './services/usage.service';
 import { logger } from './config/logger';
 
 const bedrockService = new BedrockService();
@@ -80,11 +81,24 @@ async function processMessage(message: GenerationMessage) {
 
   try {
     // 1. Kiểm tra quota trước khi gọi Bedrock (tránh cháy ví)
-    const org = await prisma.organization.findUnique({ where: { id: orgId } });
-    if (!org) throw new Error(`Organization ${orgId} not found`);
-
-    if (org.currentMonthTokens >= org.monthlyTokenQuota) {
-      throw new Error(`Monthly token quota exceeded for org ${orgId}`);
+    const quota = await usageService.checkQuota(orgId);
+    if (!quota.allowed) {
+      logger.warn(`Job ${jobId} blocked: quota exceeded for org ${orgId} (used=${quota.used}, quota=${quota.quota})`);
+      await prisma.generationJob.update({
+        where: { id: jobId },
+        data: {
+          status: 'FAILED',
+          errorMessage: 'Quota exceeded',
+          completedAt: new Date(),
+        },
+      });
+      // Revert content status so user can see it failed
+      await prisma.contentPiece.update({
+        where: { id: contentId },
+        data: { status: 'DRAFT' },
+      });
+      // DO NOT throw — SQS must delete the message (quota won’t free itself, no point retrying)
+      return;
     }
 
     // 2. Load content piece + persona

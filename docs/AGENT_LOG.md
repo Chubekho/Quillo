@@ -152,3 +152,16 @@ backend/src/routes/usage.routes.ts — thay thế stub placeholder bằng route 
 Kết quả: DONE
 
 Ghi chú: Dùng Prisma.Decimal (public export) thay vì internal @prisma/client/runtime/library để tránh lỗi TS2307. Org không có usage_logs → trả 0, không throw. monthlyTokenQuota null → quota=null, remaining=null, percentUsed=null.
+
+### [Task day 5: 2026-06-25 09:17] Quota enforcement — chặn generate khi vượt monthlyTokenQuota
+Làm gì: Thêm checkQuota() vào UsageService, tích hợp vào content.controller.ts (429 trước enqueue) và worker.ts (FAILED + return, không throw để tránh retry/DLQ).
+
+Files thay đổi:
+
+backend/src/services/usage.service.ts — thêm QuotaCheckResult interface + checkQuota() method, tái dùng getCurrentMonthUsage
+backend/src/controllers/content.controller.ts — thêm assertQuota() helper, gọi trước enqueue trong generate/rewrite/expand/shorten
+backend/src/worker.ts — thay stub currentMonthTokens bằng usageService.checkQuota(), xử lý quota exceeded bằng FAILED + return (không throw)
+
+Kết quả: DONE
+
+Ghi chú: Worker không re-throw khi quota exceeded để SQS tự xóa message, tránh retry loop và DLQ. API trả 429 với code QUOTA_EXCEEDED và message hiển thị used/quota.
