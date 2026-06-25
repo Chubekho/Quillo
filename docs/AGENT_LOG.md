@@ -71,7 +71,7 @@
 - localhost:5173 cần Gemini verify chạy được sau khi tạo xong bootstrap files
 ---
 
-### [2026-06-24 11:15] Implement Campaign Controller + CRUD
+### [Tasks day 3: 2026-06-24 11:15] Implement Campaign Controller + CRUD
 Làm gì: Tạo CampaignService và CampaignController hỗ trợ CRUD campaign với filter multi-tenant theo organizationId, thay thế stub 501 trong campaign.routes.ts.
 
 Files thay đổi:
@@ -85,7 +85,7 @@ Kết quả: DONE
 Ghi chú: Đảm bảo multi-tenant filter theo organizationId trong mọi thao tác, soft delete set status = ARCHIVED.
 ---
 
-### [2026-06-24 13:57] Tạo lại setup-local.sh + Fix localstack-init.sh
+### [Tasks day 3: 2026-06-24 13:57] Tạo lại setup-local.sh + Fix localstack-init.sh
 Làm gì: Tạo lại script one-shot `setup-local.sh` khởi tạo Docker Compose, chờ services ready, tạo SQS queues/S3 buckets, cài đặt npm dependencies và chạy Prisma migrate/seed. Sửa lỗi định dạng URL của SQS trong `localstack-init.sh` thành `http://localhost:4566`.
 
 Files thay đổi:
@@ -98,7 +98,7 @@ Kết quả: DONE
 Ghi chú: Các script đã được thiết lập chuẩn xác, sẵn sàng cho việc khởi tạo môi trường dev local.
 ---
 
-### [2026-06-24 15:32] Fix BedrockRuntimeClient không dùng LocalStack endpoint
+### [Task day 3: 2026-06-24 15:32] Fix BedrockRuntimeClient không dùng LocalStack endpoint
 Làm gì: Sửa lỗi BedrockRuntimeClient tự động nhận endpoint LocalStack từ biến môi trường AWS_ENDPOINT_URL bằng cách xóa biến này khỏi process.env sau khi cấu hình awsConfig đã được khởi tạo. Điều này giúp Bedrock gọi trực tiếp AWS thật, trong khi các dịch vụ khác (SQS, S3, Secrets Manager) vẫn giữ nguyên kết nối LocalStack.
 
 Files thay đổi:
@@ -110,7 +110,7 @@ Kết quả: DONE
 Ghi chú: Đã kiểm chứng qua middleware rằng BedrockRuntimeClient gửi request đúng tới AWS endpoint, còn SQSClient vẫn gửi tới LocalStack.
 ---
 
-### [2026-06-24 20:48] Bedrock mock mode — unblock pipeline khi chưa có quyền Bedrock
+### [Task day 4: 2026-06-24 20:48] Bedrock mock mode — unblock pipeline khi chưa có quyền Bedrock
 Làm gì: Thêm mock mode vào `bedrock.service.ts` (BEDROCK_MOCK=true) trả persona-aware marketing copy giả lập đúng shape GenerationResult mà worker.ts parse, kèm sleep(800ms) latency. Thêm biến BEDROCK_MOCK vào .env + .env.example.
 
 Files thay đổi:
@@ -123,7 +123,7 @@ Kết quả: DONE
 Ghi chú: Worker.ts không bị thay đổi. Mock content có heading markdown cho BLOG_POST, hashtag cho SOCIAL_MEDIA, subject/preheader cho EMAIL, CTA cho AD_COPY.
 ---
 
-### [2026-06-24 21:03] Export service — PDF/DOCX/HTML từ content → S3 → presigned URL
+### [Task day 4: 2026-06-24 21:03] Export service — PDF/DOCX/HTML từ content → S3 → presigned URL
 Làm gì: Tạo ExportService (generateHtml/generatePdf/generateDocx/exportContent) + ExportController (POST create, GET list) + cập nhật export.routes.ts mount dưới `/content`. Cài marked, pdfkit, html-to-docx. Thêm type declaration cho html-to-docx.
 
 Files thay đổi:
@@ -139,3 +139,16 @@ Kết quả: DONE
 Ghi chú: Export sync trong request (không qua SQS). PDF dùng pdfkit parse marked tokens (heading/paragraph/list/blockquote/code/hr). Multi-tenant filter organizationId mọi query.
 ---
 
+
+### [Task day 5: 2026-06-25 08:42] Usage tracking — GET /usage theo tháng + per model
+Làm gì: Tạo UsageService (getCurrentMonthUsage/getUsageByModel/getUsageSummary), UsageController, và cập nhật usage.routes.ts để expose GET /api/v1/usage trả usage summary tháng hiện tại kèm quota/remaining/byModel.
+
+Files thay đổi:
+
+backend/src/services/usage.service.ts — tạo mới, Prisma aggregate + groupBy theo calendar month UTC, multi-tenant filter organizationId
+backend/src/controllers/usage.controller.ts — tạo mới, delegate getUsageSummary, lỗi qua next(err)
+backend/src/routes/usage.routes.ts — thay thế stub placeholder bằng route thực tế trỏ UsageController.getSummary
+
+Kết quả: DONE
+
+Ghi chú: Dùng Prisma.Decimal (public export) thay vì internal @prisma/client/runtime/library để tránh lỗi TS2307. Org không có usage_logs → trả 0, không throw. monthlyTokenQuota null → quota=null, remaining=null, percentUsed=null.
