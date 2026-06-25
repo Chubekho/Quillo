@@ -1,48 +1,36 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuthStore } from './store/auth.store';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { AppLayout } from './components/layout/AppLayout';
+import { Login } from './pages/Login';
+import { Register } from './pages/Register';
+import { Dashboard } from './pages/Dashboard';
+import { ContentList } from './pages/ContentList';
+import { PersonaList } from './pages/PersonaList';
+import { CampaignList } from './pages/CampaignList';
+import { UsagePage } from './pages/UsagePage';
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const isAuthenticated = useAuthStore((state: any) => state.isAuthenticated);
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  return <>{children}</>;
-};
-
-const App = () => {
-  const isAuthenticated = useAuthStore((state: any) => state.isAuthenticated);
-  const fetchMe = useAuthStore((state: any) => state.fetchMe);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchMe();
-    }
-  }, [isAuthenticated, fetchMe]);
-
+const App: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route
-          path="/login"
-          element={
-            <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-              <h1 className="text-4xl font-bold text-blue-600 mb-4">Quillo</h1>
-              <p className="text-xl text-gray-600">Login — coming soon</p>
-            </div>
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-                <p className="text-xl text-gray-600">Dashboard — coming soon</p>
-              </div>
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        {/* Public Routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/content" element={<ContentList />} />
+            <Route path="/personas" element={<PersonaList />} />
+            <Route path="/campaigns" element={<CampaignList />} />
+            <Route path="/usage" element={<UsagePage />} />
+          </Route>
+        </Route>
+
+        {/* Catch-all Route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
