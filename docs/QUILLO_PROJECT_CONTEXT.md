@@ -118,10 +118,18 @@ POST   /content/:id/shorten
 GET    /content/:id/jobs/:jobId ← POLLING endpoint
 GET    /content/:id/versions
 POST   /content/:id/versions/:vId/restore
+GET    /content/:id/exports    ← list exports của content piece
+POST   /content/:id/export     ← generate PDF/DOCX/HTML → S3 presigned URL
+
 
 GET    /campaigns              ← stub, chưa implement
 
 GET    /health
+
+GET    /usage                  ← usage summary tháng hiện tại + per model
+
+GET    /org                    ← org info + quota + plan + usage embedded
+PATCH  /org                    ← update quota/plan (OWNER/ADMIN only)
 
 ---
 

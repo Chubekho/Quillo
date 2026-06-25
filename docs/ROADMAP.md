@@ -36,9 +36,9 @@
 - [x] Verify worker.ts chạy đúng với LocalStack SQS
 
 ### Day 4
-- [ ] Export service: PDF/DOCX/HTML generate từ content body
-- [ ] Upload export file lên S3 → trả về presigned URL
-- [ ] Export controller + route
+- [x] Export service: PDF/DOCX/HTML generate từ content body
+- [x] Upload export file lên S3 → trả về presigned URL
+- [x] Export controller + route
 
 ### Day 5
 - [ ] Usage tracking: GET /usage theo tháng, per model

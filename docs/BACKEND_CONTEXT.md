@@ -30,7 +30,13 @@ src/
 │   ├── content.controller.ts ← list(filter+paginate), create, get, update,
 │   │                            remove(soft-archive), generate/rewrite/expand/shorten
 │   │                            (→ GenerationQueueService), getJobStatus, versions
-│   └── persona.controller.ts ← CRUD + setDefault + Redis cache invalidation
+│   │                            assertQuota() gọi checkQuota() trước mỗi enqueue
+│   ├── export.controller.ts  ← POST /:id/export (validate format ∈ PDF/DOCX/HTML),
+│   │                            GET /:id/exports (list), delegate export.service
+│   ├── org.controller.ts     ← GET /org (trả org info + usage embedded),
+│   │                            PATCH /org (role guard OWNER/ADMIN, validate quota≥0)
+│   ├── persona.controller.ts ← CRUD + setDefault + Redis cache invalidation
+│   └── usage.controller.ts   ← GET /usage, delegate getUsageSummary
 ├── middlewares/
 │   ├── auth.middleware.ts    ← authenticate() verify JWT + check DB
 │   │                            requireRole(...roles) role guard
@@ -39,31 +45,29 @@ src/
 ├── routes/                   ← 8 files, tất cả dùng authenticate()
 ├── services/
 │   ├── campaign.service.ts   ← xử lý logic CRUD cho campaigns, filter orgId
+│   ├── export.service.ts     ← generateHtml/generatePdf/generateDocx, exportContent
+│   │                            (S3 upload + presigned URL TTL 1h)
+│   ├── org.service.ts        ← getOrg (embed getUsageSummary), updateOrg (validate fields)
+│   ├── usage.service.ts      ← getCurrentMonthUsage, getUsageByModel, getUsageSummary,
+│   │                            checkQuota (shared cho cả API và worker)
 │   └── ai/
 │       ├── generationQueue.service.ts ← enqueue(): tạo DB job → gửi SQS message
 │       └── bedrock.service.ts         ← invoke(): select model by operation,
 │                                         buildPrompt() per ContentType + operation
 │                                         4 operations: generate/rewrite/expand/shorten
+│                                         BEDROCK_MOCK=true → mock mode (không gọi AWS)
 ├── app.ts    ← helmet, cors, rateLimit, compression, morgan, routes
 ├── server.ts ← bootstrap(): prisma.$connect, redis.ping, app.listen
-└── worker.ts ← pollLocal() (dev) / handler() (Lambda prod) ← processMessage(): check quota → load piece+persona → invoke Bedrock → transaction(version+job+usage+quota)
+└── worker.ts ← pollLocal() (dev) / handler() (Lambda prod) ← processMessage():
+               checkQuota() → load piece+persona → invoke Bedrock
+               → transaction(version+job+usageLog+org.currentMonthTokens)
+               quota exceeded: FAILED + return (không throw → tránh retry/DLQ)
 
 ---
 
 ## Files CẦN implement ❌
 src/
-├── controllers/
-│   ├── campaign.controller.ts   ← CRUD campaigns (stub hiện tại trả 501)
-│   ├── export.controller.ts     ← generate PDF/DOCX/HTML → S3 presigned URL
-│   ├── org.controller.ts        ← update org settings, get usage stats
-│   └── usage.controller.ts      ← GET /usage với filter by month, model
-├── services/
-│   ├── export/
-│   │   └── export.service.ts    ← dùng pdfkit/puppeteer, docx npm package
-│   └── storage/
-│       └── storage.service.ts   ← S3 upload/download/presigned URL wrapper
-├── queues/
-└── dlq-monitor.ts               ← cron check DLQ, alert nếu có message
+└── dlq-monitor.ts               ← cron check DLQ, alert nếu có message (Day 11+)
 
 ---
 

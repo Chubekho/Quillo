@@ -7,9 +7,9 @@
 
 ## Trạng thái hiện tại
 
-**Sprint:** Tuần 1 / 2 | **Ngày:** Day 4 ✅ DONE  
+**Sprint:** Tuần 1 / 2 | **Ngày:**  Day 5 ✅ DONE
 **Branch:** main  
-**Last updated:** 2026-06-24
+**Last updated:** 2026-06-25
 
 ---
 
@@ -65,6 +65,21 @@
 - Export controller + route: POST /:id/export, GET /:id/exports, mount vào app.ts
 - Fix S3Client: thêm forcePathStyle: true (fix ENOTFOUND virtual-hosted URL)
 - E2E verified: generate (mock) → COMPLETED → export PDF/DOCX/HTML → download OK
+
+**[Backend — Day 5]**
+- Usage tracking: GET /api/v1/usage trả summary tháng hiện tại
+  - getCurrentMonthUsage / getUsageByModel / getUsageSummary
+  - Prisma aggregate + groupBy theo calendar month UTC, multi-tenant
+  - Org không có usage_logs → trả 0, không throw
+  - monthlyTokenQuota null → quota=null, unlimited
+- Quota enforcement: checkQuota() dùng chung cho API + worker
+  - API (content.controller.ts): 429 QUOTA_EXCEEDED trước khi enqueue SQS
+  - Worker (worker.ts): FAILED + return khi quota exceeded, không throw → tránh retry/DLQ
+- Org settings: GET + PATCH /api/v1/org
+  - GET trả org info + embedded usage summary
+  - PATCH: chỉ OWNER/ADMIN, validate quota >= 0, plan hợp lệ
+  - Role check trong controller, MEMBER/VIEWER → 403
+- E2E verified: usage update sau generate, quota reject 429, org update đúng role
 ---
 
 ## Đang bị block 🔴
@@ -73,11 +88,11 @@
 
 ---
 
-## Tiếp theo 🟡 (Day 5)
+## Tiếp theo 🟡 (Day 6)
 
-1. Usage tracking: GET /usage theo tháng, per model
-2. Quota enforcement: block generate khi vượt monthlyTokenQuota
-3. Org settings: update quota, xem plan
+1. Login.tsx + Register.tsx (form + validation + redirect)
+2. AppLayout.tsx: sidebar navigation
+3. ProtectedRoute hoàn chỉnh
 
 ---
 
@@ -102,3 +117,5 @@
 | Export sync (không qua SQS) | Text export nhanh, không cần queue |
 | S3 forcePathStyle: true | LocalStack không support virtual-hosted style |
 | BEDROCK_MOCK flag | Unblock pipeline, tắt khi có account thật, không sửa code |
+| checkQuota() dùng chung API + worker | Không duplicate logic, tắt DLQ retry khi quota exceeded |
+| Role check trong controller (không middleware) | Trả 403 message rõ ràng, flexible hơn |
