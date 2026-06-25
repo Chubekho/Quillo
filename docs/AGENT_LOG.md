@@ -165,3 +165,16 @@ backend/src/worker.ts — thay stub currentMonthTokens bằng usageService.check
 Kết quả: DONE
 
 Ghi chú: Worker không re-throw khi quota exceeded để SQS tự xóa message, tránh retry loop và DLQ. API trả 429 với code QUOTA_EXCEEDED và message hiển thị used/quota.
+
+### [Task day 5: 2026-06-25 09:50] Org settings — xem/update quota + plan
+Làm gì: Tạo OrgService (getOrg kèm usage summary, updateOrg validate fields), OrgController (GET + PATCH với role guard OWNER/ADMIN), cập nhật org.routes.ts thay stub 501.
+
+Files thay đổi:
+
+backend/src/services/org.service.ts — tạo mới, getOrg() gắn getUsageSummary, updateOrg() validate quota>=0 và plan hợp lệ
+backend/src/controllers/org.controller.ts — tạo mới, GET delegate service, PATCH kiểm tra role OWNER/ADMIN trước khi update
+backend/src/routes/org.routes.ts — thay stub 501 bằng GET + PATCH route thực tế
+
+Kết quả: DONE
+
+Ghi chú: Role check nằm trong controller (không ở route-level middleware) để trả response 403 với message rõ ràng. MEMBER/VIEWER chỉ được GET, không được PATCH.
