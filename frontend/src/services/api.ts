@@ -72,3 +72,12 @@ export const campaignApi = {
   list: () => api.get('/campaigns'),
   create: (data: unknown) => api.post('/campaigns', data),
 };
+
+export const orgApi = {
+  get: () => api.get('/org'),
+  update: (data: unknown) => api.patch('/org', data),
+};
+
+export const usageApi = {
+  getSummary: () => api.get('/usage'),
+};
