@@ -55,8 +55,8 @@
 - [x] ProtectedRoute hoàn chỉnh
 
 ### Day 7
-- [ ] Dashboard.tsx: token usage widget, recent content list, quick actions
-- [ ] ContentList.tsx: list + filter by type/status/campaign
+- [x] Dashboard.tsx: token usage widget, recent content list, quick actions
+- [x] ContentList.tsx: list + filter by type/status/campaign
 
 ### Day 8
 - [ ] PersonaList.tsx + PersonaEditor.tsx

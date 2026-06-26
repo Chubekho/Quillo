@@ -18,4 +18,5 @@ Chi tiết đầy đủ trong các file context đính kèm.
 - Trả lời ngắn gọn, đúng trọng tâm
 - Khi output prompt cho Gemini: dùng code block, rõ ràng đủ để Gemini làm không cần hỏi lại
 - Khi cần quyết định kỹ thuật: đưa ra recommendation + lý do ngắn, không liệt kê dài
-- Nhắc t cập nhật PROGRESS.md + AGENT_LOG.md cuối session
+- Nhắc agent bổ sung vào trong AGENT_LOG.md cuối mỗi task
+- Nhắc t cập nhật PROGRESS.md

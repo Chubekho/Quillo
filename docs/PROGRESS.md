@@ -7,9 +7,9 @@
 
 ## Trạng thái hiện tại
 
-**Sprint:** Tuần 2 / 2 | **Ngày:** Day 6 ✅ DONE
+**Sprint:** Tuần 2 / 2 | **Ngày:** Day 7 ✅ DONE
 **Branch:** main  
-**Last updated:** 2026-06-25
+**Last updated:** 2026-06-26
 
 ---
 
@@ -90,6 +90,14 @@
 - vite-env.d.ts: thêm reference vite/client, fix lỗi TS2339 ImportMeta
 - Fix: navigate(from, { replace: true }) trong Login — tránh Back button quay lại /login sau khi đã đăng nhập
 
+**[Frontend — Day 7]**
+- Spinner.tsx: component dùng chung, prop size optional, Tailwind animation
+- Badge.tsx: component dùng chung, ánh xạ màu cho ContentType (BLOG_POST/SOCIAL_MEDIA/AD_COPY/EMAIL) và ContentStatus/JobStatus
+- api.ts: bổ sung orgApi.get(), orgApi.update(), usageApi.getSummary() theo đúng pattern hiện có
+- Dashboard.tsx: full implement — usage widget (token tháng/quota + progress bar, xử lý quota=null → "Không giới hạn"), recent content 5 item mới nhất, 3 quick action điều hướng /content /personas /campaigns
+- ContentList.tsx: full implement — list content với Badge type/status/ngày, filter server-side (type/status/campaignId params), dropdown campaign từ GET /campaigns, 2 empty state phân biệt, row click TODO Day 9
+- TanStack Query cho mọi fetch: loading (Spinner) + error state đầy đủ
+
 ---
 
 ## Đang bị block 🔴
@@ -98,10 +106,11 @@
 
 ---
 
-## Tiếp theo 🟡 (Day 7)
+## Tiếp theo 🟡 (Day 8)
 
-1. Dashboard.tsx: token usage widget, recent content list, quick actions
-2. ContentList.tsx: list + filter by type/status/campaign
+1. PersonaList.tsx: list personas + badge "default" + actions
+2. PersonaEditor.tsx: form tạo/sửa persona (tone, voice, targetAudience, keywords, avoidWords, exampleOutputs)
+3. Set default persona flow
 
 ---
 
@@ -130,3 +139,4 @@
 | Role check trong controller (không middleware) | Trả 403 message rõ ràng, flexible hơn |
 | react-hook-form + zod cho mọi form | Type-safe validation, ít boilerplate, tái dùng pattern cho PersonaEditor Day 8 |
 | navigate(from, { replace: true }) sau login | Tránh Back button quay lại /login, UX chuẩn |
+| Server-side filter cho GET /content | Backend hỗ trợ params type/status/campaignId, tránh load toàn bộ data về client |

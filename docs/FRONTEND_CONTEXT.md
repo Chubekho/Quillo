@@ -23,7 +23,7 @@ src/
 ├── App.tsx                    ← Router setup: public/protected/catch-all, QueryClient, Toaster
 ├── main.tsx                   ← Entry point
 ├── services/api.ts            ← Axios instance + interceptor auto-refresh token
-│                                 Typed methods: authApi, personaApi, contentApi, campaignApi
+│                                 Typed methods: authApi, personaApi, contentApi, campaignApi, orgApi, usageApi
 ├── store/
 │   └── auth.store.ts          ← Zustand: { user, isAuthenticated, login, register,
 │                                           logout, fetchMe }
@@ -35,14 +35,17 @@ src/
 ├── components/
 │   ├── ProtectedRoute.tsx     ← auth guard: check isAuthenticated, hydrate fetchMe()
 │   │                             on reload, spinner + redirect /login kèm location.state
+│   ├── ui/
+│   │   ├── Badge.tsx          ← badge hiển thị ContentType, ContentStatus, JobStatus
+│   │   └── Spinner.tsx        ← spinner Tailwind đơn giản
 │   └── layout/
 │       └── AppLayout.tsx      ← shell 2 cột: sidebar NavLink + Outlet, user/org info,
 │                                 logout flow, responsive mobile toggle
 └── pages/
     ├── Login.tsx              ← form react-hook-form+zod, redirect navigate(from,{replace:true})
     ├── Register.tsx           ← form orgName/name/email/password, confirmPassword client-only
-    ├── Dashboard.tsx          ← placeholder stub (implement Day 7)
-    ├── ContentList.tsx        ← placeholder stub (implement Day 7)
+    ├── Dashboard.tsx          ← full implement, không phải placeholder (usage widget, recent content, quick actions)
+    ├── ContentList.tsx        ← full implement, server-side filter (list content, filter type/status/campaignId)
     ├── PersonaList.tsx        ← placeholder stub (implement Day 8)
     ├── CampaignList.tsx       ← placeholder stub (implement Day 10)
     └── UsagePage.tsx          ← placeholder stub (implement Day 10)
@@ -66,9 +69,7 @@ src/
     └── ui/
         ├── Button.tsx
         ├── Input.tsx
-        ├── Select.tsx
-        ├── Badge.tsx
-        └── Spinner.tsx        ← dùng khi polling
+        └── Select.tsx
 
 ---
 

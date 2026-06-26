@@ -42,7 +42,7 @@ Ghi chú: Nút submit disable tự động khi đang gửi, xử lý lỗi API m
 
 ---
 
-### [2026-06-25 15:30] Tạo AppLayout làm shell cho mọi protected page
+### [Task Day 6 - 2026-06-25 15:30] Tạo AppLayout làm shell cho mọi protected page
 Làm gì: Tạo component AppLayout với thiết kế 2 cột responsive (sidebar trái cố định + vùng nội dung phải chứa Outlet) kèm hiển thị thông tin user/org và tính năng đăng xuất.
 
 Files thay đổi:
@@ -70,10 +70,49 @@ Kết quả: DONE
 
 ---
 
-### [2026-06-25 16:24] Cập nhật FRONTEND_CONTEXT.md sau Day 6
+### [Task Day 6 - 2026-06-25 16:24] Cập nhật FRONTEND_CONTEXT.md sau Day 6
 Làm gì: Di chuyển files đã implement từ ❌ sang ✅ dựa theo cấu trúc thực tế trên disk (find frontend/src -name "*.tsx"). Thêm App.tsx, main.tsx, ProtectedRoute.tsx, components/layout/AppLayout.tsx, và tất cả pages stub (Login, Register, Dashboard, ContentList, PersonaList, CampaignList, UsagePage) vào block ✅. Xóa các dòng tương ứng khỏi block ❌.
 
 Files thay đổi:
   docs/FRONTEND_CONTEXT.md — cập nhật trạng thái implement
 
+Kết quả: DONE
+
+---
+
+### [Task Day 7 - 2026-06-26 13:40] Implement Dashboard.tsx và các UI component dùng chung (Spinner, Badge)
+Làm gì: Xây dựng hoàn chỉnh trang Dashboard.tsx thay thế placeholder cũ, bao gồm widget hiển thị mức sử dụng token (hỗ trợ quota = null "Không giới hạn"), danh sách nội dung gần đây (tối đa 5 item) và các nút thao tác nhanh. Tạo 2 UI component dùng chung Spinner.tsx và Badge.tsx. Bổ sung các typed API method cho orgApi và usageApi trong api.ts.
+
+Files thay đổi:
+
+frontend/src/components/ui/Spinner.tsx — tạo mới component Spinner Tailwind hỗ trợ prop size optional.
+frontend/src/components/ui/Badge.tsx — tạo mới component Badge dùng chung hỗ trợ ánh xạ màu cho ContentType, ContentStatus và JobStatus.
+frontend/src/services/api.ts — bổ sung typed method cho orgApi.get, orgApi.update và usageApi.getSummary theo đúng pattern hiện có.
+frontend/src/pages/Dashboard.tsx — triển khai hoàn chỉnh giao diện Dashboard sử dụng TanStack Query với đầy đủ trạng thái loading/error cho usage widget và recent content.
+
+Kết quả: DONE
+
+Ghi chú: Xử lý mượt mà edge case quota = null (không render progress bar, không lỗi NaN), empty state khi chưa có nội dung, điều hướng chính xác các quick action.
+
+---
+
+### [Task Day 7 - 2026-06-26 13:50] Implement ContentList.tsx với tính năng lọc server-side (type/status/campaign)
+Làm gì: Xây dựng hoàn chỉnh trang ContentList.tsx thay thế placeholder cũ, hiển thị danh sách nội dung (title, Badge type, Badge status, ngày tạo) và tích hợp bộ lọc đa tầng (loại nội dung, trạng thái, chiến dịch). Sử dụng TanStack Query để truy vấn dữ liệu từ API.
+
+Files thay đổi:
+
+frontend/src/pages/ContentList.tsx — triển khai giao diện danh sách nội dung, tích hợp query `GET /content` (hỗ trợ params filter server-side) và `GET /campaigns` (cho dropdown filter). Thiết lập các trạng thái loading, error, và 2 empty state phân biệt rõ ràng giữa "Chưa có nội dung nào" và "Không tìm thấy nội dung phù hợp với bộ lọc".
+
+Kết quả: DONE
+
+Ghi chú: Đã kiểm tra xác nhận `GET /content` trên backend có hỗ trợ đầy đủ query param (`type`, `status`, `campaignId`), do đó đã lựa chọn thực hiện **filter server-side** (gửi param qua `contentApi.list(params)`). Click vào row tạm thời không navigate (ghi `// TODO Day 9`) để tránh lỗi route.
+
+---
+
+### [Task Day 7 - 2026-06-26] Cập nhật docs sau Day 7
+Làm gì: Verify FRONTEND_CONTEXT.md, cập nhật PROGRESS.md (Day 7 done + section mới), tick checkbox ROADMAP.md
+Files thay đổi:
+  docs/FRONTEND_CONTEXT.md — verify và sửa nếu cần
+  docs/PROGRESS.md — sprint status, section Day 7, tiếp theo Day 8, decision mới
+  docs/ROADMAP.md — tick [x] Day 7 checkboxes
 Kết quả: DONE

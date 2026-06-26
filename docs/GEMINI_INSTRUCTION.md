@@ -9,7 +9,7 @@
 
 ## Sau khi hoàn thành mỗi task
 Append vào docs/AGENT_LOG-week_2.md theo đúng format này — không thay đổi format:
-[YYYY-MM-DD HH:MM] <Tên task ngắn gọn>
+[Task day X - YYYY-MM-DD HH:MM] <Tên task ngắn gọn>
 Làm gì: Mô tả 1-2 câu task vừa làm
 
 Files thay đổi:
