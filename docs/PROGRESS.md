@@ -7,9 +7,9 @@
 
 ## Trạng thái hiện tại
 
-**Sprint:** Tuần 2 / 2 | **Ngày:** Day 9 ✅ DONE
+**Sprint:** Tuần 2 / 2 | **Ngày:** Day 10 ✅ DONE
 **Branch:** main  
-**Last updated:** 2026-06-26
+**Last updated:** 2026-06-27
 
 ---
 
@@ -119,6 +119,22 @@
 **[Backend — Day 9 bugfix]**
 - content.controller.ts: mở brief + type cho PATCH /content/:id, enum validation VALID_TYPES
 
+**[Frontend — Day 10]**
+- Export UI: ExportBar.tsx — 3 nút PDF/DOCX/HTML, loading state riêng từng nút,
+  gọi POST /content/:id/export → nhận downloadUrl (presigned) → window.open tải về
+  toast.success/error, disabled khi isGenerating
+- api.ts: bổ sung contentApi.export(id, format) + campaignApi.remove(id)
+- CampaignList.tsx: full implement — list campaigns với Badge status
+  (ACTIVE/PAUSED/COMPLETED/ARCHIVED), inline create form (useState, POST /campaigns),
+  soft delete → window.confirm → DELETE → toast → refetch
+- Badge.tsx: bổ sung mapping đầy đủ 4 CampaignStatus
+  (ACTIVE xanh lá / PAUSED vàng / COMPLETED xanh dương / ARCHIVED xám)
+- GeneratePanel.tsx: thêm dropdown "Chiến dịch (tùy chọn)" lọc ACTIVE,
+  pre-fill khi edit mode, truyền campaignId vào POST /content + PATCH /content/:id
+- UsagePage.tsx: full implement — progress bar token/quota (đỏ khi ≥90%),
+  quota=null → "Không giới hạn", breakdown byModel (model/tokens/requestCount/cost),
+  thông tin plan + model generate/edit, 3 states (loading/error/empty)
+
 ---
 
 ## Đang bị block 🔴
@@ -127,12 +143,11 @@
 
 ---
 
-## Tiếp theo 🟡 (Day 10)
+## Tiếp theo 🟡 (Day 11)
 
-1. Export UI: button PDF/DOCX/HTML → download presigned URL
-2. CampaignList.tsx: full implement (thay stub) + tạo campaign mới
-3. Gắn content vào campaign (campaignId trong ContentEditor GeneratePanel)
-4. UsagePage.tsx: full implement (thay stub)
+1. CloudWatch: log groups, metric alarms (error rate, SQS queue depth)
+2. WAF: basic rules SQLi/XSS/rate limit
+3. Secrets Manager: migrate DB creds + JWT secret ra khỏi .env
 
 ---
 
@@ -140,8 +155,9 @@
 
 - Bedrock blocked: dùng BEDROCK_MOCK=true tạm thời, sẽ mượn account team bootcamp có quyền Bedrock
 - Worker cần SQS queue tồn tại trước khi start (chạy setup-local.sh)
-- UX backlog — Keywords/AvoidWords chip input: cân nhắc thêm (a) helper text rõ hơn, nút "+ Thêm" bên cạnh input, (b) auto-parse khi user nhập dạng "từ1, từ2, từ3". Chưa làm vì không block flow; để Day 10 nếu còn thời gian.
-- ContentDisplay render plain text (whitespace-pre-wrap): mock output có markdown syntax (**/##) hiện raw. Cân nhắc thêm lib marked ở frontend. Để Day 10 nếu còn thời gian.
+- Task 3 (gắn campaign vào content): đã implement nhưng chưa test kỹ —
+  cần verify pre-fill campaign khi edit mode + campaignId lưu đúng DB +
+  ContentList filter by campaign hiển thị đúng
 
 ---
 
@@ -168,3 +184,6 @@
 | PATCH /content/:id mở thêm brief+type | brief/type cần persist khi regenerate, không chỉ khi tạo mới |
 | Form reset theo id-change (useRef) | Tránh refetch sau generate đè giá trị user đang nhập |
 | brief+type gửi trong PATCH khi regenerate | Backend đọc từ DB trước khi generate, phải lưu đúng |
+| Export sync trả downloadUrl | Backend trả presigned URL trực tiếp trong response body field `downloadUrl` |
+| campaignId optional trong GeneratePanel | Campaign không bắt buộc, gửi null nếu không chọn |
+| CampaignList dùng useState cho inline form | Form 2 field đơn giản, không cần react-hook-form/zod |

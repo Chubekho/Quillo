@@ -48,3 +48,49 @@ Kết quả verify contract trước khi implement:
    - Method `list()` đã tồn tại: `list: () => api.get('/campaigns'),`.
    - Method `create()` đã có sẵn: `create: (data: unknown) => api.post('/campaigns', data),`.
    - Method `remove()` (DELETE) đã được bổ sung thành công: `remove: (id: string) => api.delete(\`/campaigns/\${id}\`)`.
+
+---
+
+### [Task Day 10 - 2026-06-27 00:26] Gắn content vào campaign (campaignId trong ContentEditor)
+Làm gì: Verify toàn bộ dữ liệu luồng tạo/chỉnh sửa content liên quan đến campaignId và trạng thái CampaignStatus. Bổ sung mapping CampaignStatus vào Badge.tsx và thêm dropdown chọn chiến dịch (chỉ hiển thị ACTIVE) vào GeneratePanel.tsx cho cả luồng tạo mới và tạo lại.
+
+Files thay đổi:
+
+frontend/src/components/ui/Badge.tsx — bổ sung mapping màu sắc chuẩn cho cả 4 trạng thái CampaignStatus (`ACTIVE`: xanh lá, `PAUSED`: vàng, `COMPLETED`: xanh dương, `ARCHIVED`: xám) mà không ảnh hưởng đến các trạng thái cũ.
+frontend/src/components/content/GeneratePanel.tsx — thêm dropdown `Select` chọn chiến dịch (tùy chọn) lọc theo trạng thái `ACTIVE`, đồng thời truyền `campaignId` vào body `POST /content` và `PATCH /content/:id`.
+
+Kết quả: DONE
+
+Ghi chú: 
+Kết quả verify trước khi implement:
+1. frontend/src/components/content/GeneratePanel.tsx:
+   - Props nhận vào: `contentId?: string; initialData?: Partial<GenerateFormValues>; onJobStarted: (jobId: string, newContentId?: string) => void; disabled: boolean;`
+   - Form fields hiện tại: `title`, `type`, `brief`, `personaId`.
+   - Submit create flow (`POST /content`): `contentApi.create({ title, type, brief, personaId })` → chưa có `campaignId`.
+   - Submit regenerate flow (`PATCH /content/:id`): `contentApi.update(contentId, patchPayload)` → chưa có `campaignId`.
+
+2. frontend/src/pages/ContentEditor.tsx:
+   - State hiện tại: `activeContentId`, `currentJobId`, `body`, `showHistory` → không chứa `campaignId`.
+   - Khi load content cũ (edit mode): `GET /content/:id` trả về `piece` (với `campaignId` và `campaign: { id, name, ... }`). `initialData` truyền vào `GeneratePanel` chính là object này.
+
+3. frontend/src/components/ui/Badge.tsx:
+   - Chưa map đầy đủ 4 giá trị CampaignStatus (`ACTIVE`, `PAUSED`, `COMPLETED`, `ARCHIVED`). Hiện tại mới chỉ có `COMPLETED` (màu xanh lá chung với READY/PUBLISHED) và `ARCHIVED` (màu xám). Đã tách và thêm: `ACTIVE` (xanh lá), `PAUSED` (vàng), `COMPLETED` (xanh dương), `ARCHIVED` (xám).
+
+---
+
+### [Task Day 10 - 2026-06-27 00:38] UsagePage.tsx: full implement (thay stub)
+Làm gì: Thực hiện verify contract của `GET /usage` và `GET /org`. Triển khai toàn bộ trang `UsagePage.tsx` thay thế placeholder stub, bao gồm: tổng quan token đã dùng trong tháng này kèm thanh tiến trình (progress bar đổi sang đỏ khi dùng ≥ 90%), bảng chi tiết breakdown theo từng model, và thông tin gói dịch vụ kèm model generate/edit chính.
+
+Files thay đổi:
+
+frontend/src/pages/UsagePage.tsx — thay thế placeholder stub bằng giao diện quản lý tài nguyên cao cấp, sử dụng `useQuery` gọi `orgApi.get` và `usageApi.getSummary`, hỗ trợ trọn vẹn các trạng thái loading, error kèm nút "Thử lại", và empty state "Chưa có hoạt động nào tháng này" tường minh.
+docs/FRONTEND_CONTEXT.md — cập nhật trạng thái UsagePage từ ❌ sang ✅.
+
+Kết quả: DONE
+
+Ghi chú: 
+Kết quả verify contract trước khi implement:
+1. `GET /usage` → response shape: `{ month, quota, used, remaining, percentUsed, byModel: [{ model, inputTokens, outputTokens, totalTokens, cost, requestCount }] }`.
+2. `GET /org` → response shape: `{ id, name, slug, plan, monthlyTokenQuota, currentMonthTokens, quotaResetAt, usage: { ... } }`.
+3. `QUILLO_PROJECT_CONTEXT.md` → `BEDROCK_GENERATE_MODEL=us.anthropic.claude-sonnet-4-5`, `BEDROCK_EDIT_MODEL=us.anthropic.claude-haiku-4-5`.
+4. Đã kiểm tra `tsc --noEmit` thành công 100% sạch không lỗi.

@@ -60,7 +60,7 @@ src/
     ├── PersonaList.tsx        ← full implement, list brand personas + badge "mặc định" + actions (sửa / xóa / đặt mặc định)
     ├── PersonaEditor.tsx      ← create/edit mode, useParams, mutation create/update
     ├── CampaignList.tsx       ← full implement, list campaigns + tạo mới inline form + lưu trữ (soft delete)
-    └── UsagePage.tsx          ← placeholder stub (implement Day 10)
+    └── UsagePage.tsx          ← full implement, hiển thị tổng quan token tháng này, breakdown theo model và thông tin gói dịch vụ
 
 ---
 

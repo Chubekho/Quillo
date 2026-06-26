@@ -70,9 +70,9 @@
 - [x] VersionHistory.tsx: list versions + restore
 
 ### Day 10
-- [ ] Export UI: button PDF/DOCX/HTML → download presigned URL
-- [ ] CampaignList.tsx + tạo campaign mới
-- [ ] Gắn content vào campaign
+- [x] Export UI: button PDF/DOCX/HTML → download presigned URL
+- [x] CampaignList.tsx + tạo campaign mới
+- [x] Gắn content vào campaign
 
 ### Day 11
 - [ ] CloudWatch: log groups, metric alarms (error rate, SQS queue depth)
