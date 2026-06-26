@@ -23,7 +23,7 @@ src/
 ├── App.tsx                    ← Router setup: public/protected/catch-all, QueryClient, Toaster
 ├── main.tsx                   ← Entry point
 ├── services/api.ts            ← Axios instance + interceptor auto-refresh token
-│                                 Typed methods: authApi, personaApi, contentApi, campaignApi, orgApi, usageApi
+│                                 Typed methods: authApi, personaApi (bổ sung get(id), remove(id)), contentApi, campaignApi, orgApi, usageApi
 ├── store/
 │   └── auth.store.ts          ← Zustand: { user, isAuthenticated, login, register,
 │                                           logout, fetchMe }
@@ -35,9 +35,14 @@ src/
 ├── components/
 │   ├── ProtectedRoute.tsx     ← auth guard: check isAuthenticated, hydrate fetchMe()
 │   │                             on reload, spinner + redirect /login kèm location.state
+│   ├── persona/
+│   │   └── PersonaForm.tsx    ← react-hook-form + zod, array chips keywords/avoidWords, exampleOutputs
 │   ├── ui/
 │   │   ├── Badge.tsx          ← badge hiển thị ContentType, ContentStatus, JobStatus
-│   │   └── Spinner.tsx        ← spinner Tailwind đơn giản
+│   │   ├── Spinner.tsx        ← spinner Tailwind đơn giản
+│   │   ├── Button.tsx         ← button Tailwind tái dùng hỗ trợ variant, isLoading
+│   │   ├── Input.tsx          ← input Tailwind tái dùng hỗ trợ label, error
+│   │   └── Select.tsx         ← select Tailwind tái dùng hỗ trợ label, error, options
 │   └── layout/
 │       └── AppLayout.tsx      ← shell 2 cột: sidebar NavLink + Outlet, user/org info,
 │                                 logout flow, responsive mobile toggle
@@ -46,7 +51,8 @@ src/
     ├── Register.tsx           ← form orgName/name/email/password, confirmPassword client-only
     ├── Dashboard.tsx          ← full implement, không phải placeholder (usage widget, recent content, quick actions)
     ├── ContentList.tsx        ← full implement, server-side filter (list content, filter type/status/campaignId)
-    ├── PersonaList.tsx        ← placeholder stub (implement Day 8)
+    ├── PersonaList.tsx        ← full implement, list brand personas + badge "mặc định" + actions (sửa / xóa / đặt mặc định)
+    ├── PersonaEditor.tsx      ← create/edit mode, useParams, mutation create/update
     ├── CampaignList.tsx       ← placeholder stub (implement Day 10)
     └── UsagePage.tsx          ← placeholder stub (implement Day 10)
 ---
@@ -56,20 +62,13 @@ src/
 ├── pages/
 │   ├── ContentEditor.tsx      ← MAIN PAGE: brief input, generate button,
 │   │                             polling spinner, content display, edit actions
-│   ├── PersonaEditor.tsx      ← form tạo/sửa persona (tone, voice, keywords...)
 │   └── Campaigns.tsx          ← list campaigns, tạo mới
 └── components/
-    ├── content/
-    │   ├── ContentCard.tsx    ← card hiển thị trong list
-    │   ├── GeneratePanel.tsx  ← brief input + type selector + persona picker
-    │   ├── ContentDisplay.tsx ← hiển thị generated text + action buttons
-    │   └── VersionHistory.tsx ← list versions, restore button
-    ├── persona/
-    │   └── PersonaForm.tsx    ← multi-field form cho persona
-    └── ui/
-        ├── Button.tsx
-        ├── Input.tsx
-        └── Select.tsx
+    └── content/
+        ├── ContentCard.tsx    ← card hiển thị trong list
+        ├── GeneratePanel.tsx  ← brief input + type selector + persona picker
+        ├── ContentDisplay.tsx ← hiển thị generated text + action buttons
+        └── VersionHistory.tsx ← list versions, restore button
 
 ---
 

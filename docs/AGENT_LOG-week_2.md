@@ -116,3 +116,63 @@ Files thay đổi:
   docs/PROGRESS.md — sprint status, section Day 7, tiếp theo Day 8, decision mới
   docs/ROADMAP.md — tick [x] Day 7 checkboxes
 Kết quả: DONE
+
+---
+
+### [Task Day 8 - 2026-06-26 14:30] Implement PersonaList.tsx với đầy đủ trạng thái và actions
+Làm gì: Triển khai trang quản lý PersonaList.tsx thay thế placeholder cũ, bao gồm hiển thị danh sách brand personas, badge "Mặc định", và các tính năng tạo, sửa, xóa, đặt mặc định. Bổ sung method remove vào personaApi trong api.ts.
+
+Files thay đổi:
+
+frontend/src/services/api.ts — bổ sung method remove(id) gọi DELETE /personas/:id theo đúng pattern hiện có mà không đổi các method signature cũ.
+frontend/src/pages/PersonaList.tsx — triển khai giao diện danh sách Brand Persona với TanStack Query, các mutation setDefaultMutation và deleteMutation, thiết lập đủ 3 trạng thái loading (Spinner), error (thông báo + nút thử lại) và empty (thông báo + nút tạo persona đầu tiên).
+
+Kết quả: DONE
+
+Ghi chú: Xử lý disable các nút hành động khi mutation đang pending, xác nhận xóa với window.confirm, hiển thị thông báo toast success/error mượt mà. Đã kiểm tra tsc --noEmit không có lỗi.
+
+---
+
+### [Task Day 8 - 2026-06-26 14:43] Implement Persona create/edit flow (PersonaForm, PersonaEditor, Routes)
+Làm gì: Triển khai hoàn chỉnh luồng tạo mới và chỉnh sửa Brand Persona bao gồm form dùng chung `PersonaForm.tsx`, trang quản lý `PersonaEditor.tsx`, các UI component nhỏ (`Button`, `Input`, `Select`) và tích hợp 2 route vào `App.tsx`.
+
+1. Thông tin đọc từ `backend/prisma/schema.prisma` (để verify):
+   - `tone`: kiểu `String` (bắt buộc, không phải Prisma enum). Comment trong schema gợi ý các giá trị: `"professional"`, `"playful"`, `"empathetic"`.
+   - `voice`: kiểu `String?` (tùy chọn, không phải Prisma enum). Comment gợi ý: `"Chúng tôi là người bạn đồng hành tin cậy..."`.
+   - `formalityLevel`: kiểu `Int` với `@default(3)` (từ 1=rất casual đến 5=rất formal).
+   - Các field required: `name`, `tone`, `targetAudience`, `language`, `formalityLevel`, `isDefault`.
+   - Các field optional: `voice`, `ageRange`, `industry`.
+   - Các field array: `keywords`, `avoidWords`, `exampleOutputs`.
+
+2. Files tạo mới & sửa đổi:
+   - `frontend/src/components/ui/Button.tsx` — tạo mới component Button Tailwind hỗ trợ variant và isLoading.
+   - `frontend/src/components/ui/Input.tsx` — tạo mới component Input Tailwind hỗ trợ label và error message.
+   - `frontend/src/components/ui/Select.tsx` — tạo mới component Select Tailwind hỗ trợ label, error message và options.
+   - `frontend/src/components/persona/PersonaForm.tsx` — tạo mới form dùng chung cho create/edit mode sử dụng react-hook-form và zod, xử lý mượt mà mảng keywords, avoidWords (nhập + Enter tạo chip, click X xóa) và exampleOutputs (list textarea, nút thêm/xóa).
+   - `frontend/src/pages/PersonaEditor.tsx` — tạo mới trang quản lý create/edit, sử dụng `useParams()`, fetch dữ liệu qua `useQuery`, xử lý mutation create/update với `toast.success`, `invalidateQueries` và `navigate`.
+   - `frontend/src/services/api.ts` — bổ sung method `get(id)` gọi `GET /personas/:id` theo đúng pattern hiện có mà không đổi các method signature cũ.
+   - `frontend/src/App.tsx` — thêm 2 route protected: `/personas/new` (đặt trước) và `/personas/:id/edit` bọc trong `ProtectedRoute` và `AppLayout`.
+
+Kết quả: DONE
+
+Ghi chú: Luồng hoạt động trơn tru, kết nối chính xác từ PersonaList sang PersonaEditor, kiểm tra `tsc --noEmit` hoàn toàn không có lỗi.
+
+---
+
+### [Bug Fix Day 8 - 2026-06-26 15:00] Sửa lỗi PersonaForm không pre-fill keywords và avoidWords trong edit mode
+Làm gì: Sửa lỗi hiển thị rỗng cho các mảng `keywords` và `avoidWords` khi vào trang chỉnh sửa `/personas/:id/edit` (kể cả khi DB có dữ liệu).
+
+1. Root Cause:
+   - Trước đây form sử dụng cơ chế `watch('keywords')` kết hợp với giá trị mặc định hoặc `useState`, nhưng do `useState([])` không tự động tái tạo khi `defaultValues` được tải về từ `useQuery` và cơ chế mảng nguyên thủy (primitive arrays) của react-hook-form không tự động đồng bộ đầy đủ các phần tử phi cấu trúc (chips) nếu không có binding rõ ràng.
+   - Kiểm tra `exampleOutputs`: Trường này cũng là mảng (`string[]`), do đó hoàn toàn có rủi ro tương tự về việc mất đồng bộ state nếu quản lý thủ công mà không dùng `useFieldArray`.
+
+2. Cách Fix (Áp dụng Cách A - `useFieldArray`):
+   - Chuyển đổi định nghĩa mảng trong Zod schema sang mảng object chứa value: `z.array(z.object({ value: z.string() }))`.
+   - Chuẩn hóa đầu vào `defaultValues` bằng cách map `string[]` sang `{ value: string }[]`.
+   - Dùng `useFieldArray` của react-hook-form để quản lý trực tiếp cả 3 trường `keywords`, `avoidWords`, và `exampleOutputs`.
+   - Với các mảng chip (`keywords`, `avoidWords`), gắn thêm thẻ `<input type="hidden" {...register(...)} />` vào mỗi chip để đảm bảo react-hook-form thu thập chính xác 100% dữ liệu khi submit.
+   - Trong hàm `onSubmit`, map ngược các mảng `{ value: string }[]` về lại `string[]` trước khi gọi API.
+
+Kết quả: DONE
+
+Ghi chú: Đã kiểm tra `tsc --noEmit` thành công hoàn toàn không có lỗi. Form hoạt động ổn định, pre-fill chuẩn xác ngay khi mở trang edit mode.

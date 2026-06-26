@@ -7,6 +7,7 @@ import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { ContentList } from './pages/ContentList';
 import { PersonaList } from './pages/PersonaList';
+import { PersonaEditor } from './pages/PersonaEditor';
 import { CampaignList } from './pages/CampaignList';
 import { UsagePage } from './pages/UsagePage';
 
@@ -24,6 +25,8 @@ const App: React.FC = () => {
             <Route path="/" element={<Dashboard />} />
             <Route path="/content" element={<ContentList />} />
             <Route path="/personas" element={<PersonaList />} />
+            <Route path="/personas/new" element={<PersonaEditor />} />
+            <Route path="/personas/:id/edit" element={<PersonaEditor />} />
             <Route path="/campaigns" element={<CampaignList />} />
             <Route path="/usage" element={<UsagePage />} />
           </Route>

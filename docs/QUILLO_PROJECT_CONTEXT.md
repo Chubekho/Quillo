@@ -58,9 +58,9 @@ quillo/
 │       └── worker.ts            ← SQS consumer (Lambda in prod)
 ├── frontend/
 │   └── src/
-│       ├── components/          ← CHƯA implement
+│       ├── components/          ← đã có: ProtectedRoute.tsx, ui/(Badge, Spinner, Button, Input, Select), layout/AppLayout.tsx, persona/PersonaForm.tsx
 │       ├── hooks/               ← useJobPoller.ts ✅
-│       ├── pages/               ← CHƯA implement
+│       ├── pages/               ← đã có: Login, Register, Dashboard, ContentList, PersonaList, PersonaEditor (chưa có: ContentEditor, CampaignList (full), UsagePage (full))
 │       ├── services/api.ts      ← Axios client + typed methods ✅
 │       └── store/auth.store.ts  ← Zustand auth store ✅
 ├── infrastructure/

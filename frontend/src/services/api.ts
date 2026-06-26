@@ -49,9 +49,11 @@ export const authApi = {
 
 export const personaApi = {
   list: () => api.get('/personas'),
+  get: (id: string) => api.get(`/personas/${id}`),
   create: (data: unknown) => api.post('/personas', data),
   update: (id: string, data: unknown) => api.put(`/personas/${id}`, data),
   delete: (id: string) => api.delete(`/personas/${id}`),
+  remove: (id: string) => api.delete(`/personas/${id}`),
   setDefault: (id: string) => api.patch(`/personas/${id}/set-default`),
 };
 

@@ -7,7 +7,7 @@
 
 ## Trạng thái hiện tại
 
-**Sprint:** Tuần 2 / 2 | **Ngày:** Day 7 ✅ DONE
+**Sprint:** Tuần 2 / 2 | **Ngày:** Day 8 ✅ DONE
 **Branch:** main  
 **Last updated:** 2026-06-26
 
@@ -98,6 +98,15 @@
 - ContentList.tsx: full implement — list content với Badge type/status/ngày, filter server-side (type/status/campaignId params), dropdown campaign từ GET /campaigns, 2 empty state phân biệt, row click TODO Day 9
 - TanStack Query cho mọi fetch: loading (Spinner) + error state đầy đủ
 
+**[Frontend — Day 8]**
+- PersonaList.tsx: full implement — hiển thị danh sách brand personas, badge "Mặc định", các tính năng tạo, sửa, xóa (window.confirm), đặt mặc định, xử lý loading/error/empty state đầy đủ
+- Button.tsx / Input.tsx / Select.tsx: các UI component Tailwind tái dùng hỗ trợ variant, isLoading, label, error message, options
+- PersonaForm.tsx: form dùng chung cho create/edit mode với react-hook-form + zod, dùng useFieldArray quản lý mảng chips keywords/avoidWords và exampleOutputs
+- PersonaEditor.tsx: trang quản lý create/edit, sử dụng useParams(), fetch dữ liệu qua useQuery, xử lý mutation create/update với toast.success, invalidateQueries và navigate
+- api.ts: bổ sung method get(id) và remove(id) cho personaApi theo đúng pattern hiện có
+- App.tsx: cấu trúc routing — thêm 2 route protected /personas/new và /personas/:id/edit bọc trong ProtectedRoute + AppLayout
+- Bug fix: sửa lỗi PersonaForm không pre-fill keywords, avoidWords và exampleOutputs trong edit mode bằng cách áp dụng useFieldArray và chuẩn hóa defaultValues
+
 ---
 
 ## Đang bị block 🔴
@@ -106,11 +115,12 @@
 
 ---
 
-## Tiếp theo 🟡 (Day 8)
+## Tiếp theo 🟡 (Day 9)
 
-1. PersonaList.tsx: list personas + badge "default" + actions
-2. PersonaEditor.tsx: form tạo/sửa persona (tone, voice, targetAudience, keywords, avoidWords, exampleOutputs)
-3. Set default persona flow
+1. ContentEditor.tsx: brief input + type selector + persona picker
+2. Generate button → useJobPoller → polling spinner → hiện kết quả
+3. Action buttons: Rewrite | Expand | Shorten
+4. VersionHistory.tsx: list versions + restore
 
 ---
 
@@ -118,6 +128,7 @@
 
 - Bedrock blocked: dùng BEDROCK_MOCK=true tạm thời, sẽ mượn account team bootcamp có quyền Bedrock
 - Worker cần SQS queue tồn tại trước khi start (chạy setup-local.sh)
+- UX backlog — Keywords/AvoidWords chip input: cân nhắc thêm (a) helper text rõ hơn, nút "+ Thêm" bên cạnh input, (b) auto-parse khi user nhập dạng "từ1, từ2, từ3". Chưa làm vì không block flow; để Day 10 nếu còn thời gian.
 
 ---
 
