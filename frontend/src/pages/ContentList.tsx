@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { contentApi, campaignApi } from '../services/api';
 import { Spinner } from '../components/ui/Spinner';
@@ -11,7 +12,8 @@ import {
   Calendar,
   FolderKanban,
   CheckCircle2,
-  Layers
+  Layers,
+  Plus
 } from 'lucide-react';
 
 const CONTENT_TYPES = ['BLOG_POST', 'SOCIAL_MEDIA', 'AD_COPY', 'EMAIL'];
@@ -54,6 +56,8 @@ const formatDate = (dateString: string) => {
 };
 
 export const ContentList: React.FC = () => {
+  const navigate = useNavigate();
+
   // State bộ lọc
   const [filterType, setFilterType] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
@@ -102,11 +106,20 @@ export const ContentList: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Danh sách Nội dung</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Quản lý toàn bộ bài viết, bài đăng mạng xã hội, quảng cáo và email marketing của doanh nghiệp.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Danh sách Nội dung</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Quản lý toàn bộ bài viết, bài đăng mạng xã hội, quảng cáo và email marketing của doanh nghiệp.
+          </p>
+        </div>
+        <button
+          onClick={() => navigate('/content/new')}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Tạo nội dung</span>
+        </button>
       </div>
 
       {/* Bộ lọc (Filters) */}
@@ -243,10 +256,8 @@ export const ContentList: React.FC = () => {
             {items.map((item: any) => (
               <div
                 key={item.id}
-                onClick={() => {
-                  // TODO Day 9: navigate(`/content/${item.id}`)
-                }}
-                className="p-6 hover:bg-gray-50/75 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-default group"
+                onClick={() => navigate(`/content/${item.id}`)}
+                className="p-6 hover:bg-gray-50/75 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer group"
               >
                 <div className="space-y-1.5 min-w-0 flex-1">
                   <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors truncate text-base">

@@ -176,3 +176,46 @@ Làm gì: Sửa lỗi hiển thị rỗng cho các mảng `keywords` và `avoidW
 Kết quả: DONE
 
 Ghi chú: Đã kiểm tra `tsc --noEmit` thành công hoàn toàn không có lỗi. Form hoạt động ổn định, pre-fill chuẩn xác ngay khi mở trang edit mode.
+
+---
+
+### [Task Day 9 - 2026-06-26 15:35] Bước 0 — Verify Backend Contract
+Làm gì: Đọc và xác minh chính xác hợp đồng giao tiếp (contract) của backend và hook poller trước khi implement ContentEditor core.
+
+Files thay đổi:
+docs/AGENT_LOG-week_2.md — ghi lại kết quả verify 4 câu hỏi bắt buộc.
+
+Kết quả: DONE
+
+Ghi chú:
+1. `backend/src/controllers/content.controller.ts` + routes + service:
+   - `POST /content/:id/generate` lấy `brief` và `persona` từ DB (thông qua ContentPiece đã lưu), không nhận trong request body. Body shape của request là rỗng `{}`.
+   - `POST /content` tạo DRAFT nhận các field: `title`, `type`, `brief` (bắt buộc), `campaignId`, `personaId`, `targetAudience`, `meta` (tùy chọn) và trả về nguyên object ContentPiece vừa tạo kèm `id` và `status: 'DRAFT'`.
+
+2. `GET /content/:id` trả về trọn bộ thông tin object ContentPiece (kèm include `persona`, `campaign`), đồng thời CÓ EMBED sẵn `activeVersion` (chứa `body` của phiên bản active mới nhất). Không cần gọi riêng `GET /content/:id/versions`. Các field trả về: `id`, `organizationId`, `title`, `type`, `brief`, `status`, `campaignId`, `personaId`, `targetAudience`, `meta`, `createdAt`, `updatedAt`, `persona`, `campaign`, `activeVersion`.
+
+3. `GET /content/:id/jobs/:jobId` (polling) khi COMPLETED trả về object `{ job, result }`. Trong đó `job` chứa thông tin GenerationJob (không chứa body), còn `result` được backend query tự động chứa thông tin phiên bản ContentVersion mới nhất đang active (`id`, `versionNo`, `body`, `source`, `createdAt`). Do đó lấy được ngay `body` mà không cần fetch riêng.
+
+4. `useJobPoller.ts`:
+   - Return object: `{ status, result, error }`.
+   - Khi completed, `result` chứa `{ id: string; body: string; versionNo: number }`.
+   - Auto-stop (gọi `clearInterval`) khi `jobStatus === 'completed'` hoặc `jobStatus === 'failed'`, hoặc khi unmount/lỗi catch.
+
+-> DỪNG và báo cáo kết quả xác minh hợp đồng giao tiếp (contract) của backend và hook poller.
+
+---
+
+### [Task Day 9 - 2026-06-26 15:55] Task 1 — ContentEditor core: vòng lặp generate → poll → display (happy path)
+Làm gì: Triển khai giao diện lõi của ContentEditor hỗ trợ vòng lặp generate -> poll -> display happy path theo đúng contract backend đã verify ở Bước 0.
+
+Files thay đổi:
+
+frontend/src/components/content/GeneratePanel.tsx — tạo mới component form thiết lập nội dung (title, type, personaId, brief) với react-hook-form + zod, xử lý tự động chọn default persona, gọi api create/generate và báo onJobStarted lên parent.
+frontend/src/components/content/ContentDisplay.tsx — tạo mới component hiển thị kết quả AI (chỉ hiển thị, chưa có edit actions), hỗ trợ spinner khi isGenerating và hiển thị text whitespace-pre-wrap khi có body.
+frontend/src/pages/ContentEditor.tsx — tạo mới trang chính quản lý state activeContentId, currentJobId, body, fetch dữ liệu content hiện tại, kết nối hook poller useJobPoller và cập nhật URL với replace: true khi tạo mới.
+frontend/src/App.tsx — bổ sung 2 route /content/new và /content/:id bọc trong ProtectedRoute và AppLayout.
+frontend/src/pages/ContentList.tsx — thêm nút Tạo nội dung ở header và onClick navigate chuyển trang khi click vào row.
+
+Kết quả: DONE
+
+Ghi chú: Đã kiểm tra `tsc --noEmit` hoàn toàn thành công, không có lỗi TypeScript.
