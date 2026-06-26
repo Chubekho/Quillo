@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useQuery } from '@tanstack/react-query';
-import { personaApi, contentApi } from '../../services/api';
+import { personaApi, contentApi, campaignApi } from '../../services/api';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
@@ -13,6 +13,7 @@ const generateSchema = z.object({
   title: z.string().min(1, 'Tiêu đề không được để trống'),
   type: z.string().min(1, 'Vui lòng chọn loại nội dung'),
   personaId: z.string().optional(),
+  campaignId: z.string().optional(),
   brief: z.string().min(1, 'Brief không được để trống'),
 });
 
@@ -46,6 +47,7 @@ export const GeneratePanel: React.FC<GeneratePanelProps> = ({
       title: initialData?.title || '',
       type: initialData?.type || 'BLOG_POST',
       personaId: initialData?.personaId || '',
+      campaignId: initialData?.campaignId || '',
       brief: initialData?.brief || '',
     },
   });
@@ -60,6 +62,7 @@ export const GeneratePanel: React.FC<GeneratePanelProps> = ({
         title: initialData.title || '',
         type: initialData.type || 'BLOG_POST',
         personaId: initialData.personaId || '',
+        campaignId: initialData.campaignId || '',
         brief: initialData.brief || '',
       });
       initializedId.current = currentId;
@@ -71,6 +74,15 @@ export const GeneratePanel: React.FC<GeneratePanelProps> = ({
     queryFn: async () => {
       const res = await personaApi.list();
       return Array.isArray(res.data) ? res.data : res.data.items || [];
+    },
+  });
+
+  const { data: campaigns = [], isLoading: isCampaignsLoading } = useQuery({
+    queryKey: ['campaigns'],
+    queryFn: async () => {
+      const res = await campaignApi.list();
+      const items = Array.isArray(res.data) ? res.data : res.data.items || [];
+      return items.filter((c: any) => c.status === 'ACTIVE');
     },
   });
 
@@ -95,6 +107,7 @@ export const GeneratePanel: React.FC<GeneratePanelProps> = ({
           type: data.type,
           brief: data.brief,
           personaId: data.personaId || undefined,
+          campaignId: data.campaignId || null,
         });
         const newId = createRes.data.id;
         const genRes = await contentApi.generate(newId);
@@ -106,6 +119,7 @@ export const GeneratePanel: React.FC<GeneratePanelProps> = ({
           title: data.title,
           type: data.type,
           brief: data.brief,
+          campaignId: data.campaignId || null,
         };
         if (data.personaId) {
           patchPayload.personaId = data.personaId;
@@ -126,7 +140,7 @@ export const GeneratePanel: React.FC<GeneratePanelProps> = ({
       <div className="border-b border-gray-100 pb-4">
         <h2 className="text-lg font-semibold text-gray-900">Thông tin Thiết lập</h2>
         <p className="text-xs text-gray-500 mt-1">
-          Thiết lập tiêu đề, brief và persona để AI tạo nội dung.
+          Thiết lập tiêu đề, brief, chiến dịch và persona để AI tạo nội dung.
         </p>
       </div>
 
@@ -151,6 +165,20 @@ export const GeneratePanel: React.FC<GeneratePanelProps> = ({
             { value: 'SOCIAL_MEDIA', label: 'Mạng xã hội (Social Media)' },
             { value: 'AD_COPY', label: 'Quảng cáo (Ad Copy)' },
             { value: 'EMAIL', label: 'Email Marketing' },
+          ]}
+        />
+
+        <Select
+          id="campaignId"
+          label="Chiến dịch (tùy chọn)"
+          {...register('campaignId')}
+          disabled={isCampaignsLoading || disabled || isSubmitting}
+          options={[
+            { value: '', label: isCampaignsLoading ? 'Đang tải...' : 'Không thuộc chiến dịch nào' },
+            ...campaigns.map((c: any) => ({
+              value: c.id,
+              label: c.name,
+            })),
           ]}
         />
 

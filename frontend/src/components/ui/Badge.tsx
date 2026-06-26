@@ -17,6 +17,9 @@ export type BadgeVariant =
   | 'PROCESSING'
   | 'COMPLETED'
   | 'FAILED'
+  // CampaignStatus
+  | 'ACTIVE'
+  | 'PAUSED'
   // Fallback
   | string;
 
@@ -43,19 +46,25 @@ export const Badge: React.FC<BadgeProps> = ({ children, variant = 'default' }) =
       colorClasses = 'bg-emerald-50 text-emerald-700 border-emerald-200';
       break;
 
-    // ContentStatus & JobStatus
+    // ContentStatus, JobStatus & CampaignStatus
+    case 'ACTIVE':
+    case 'READY':
+    case 'PUBLISHED':
+      colorClasses = 'bg-green-50 text-green-700 border-green-200';
+      break;
     case 'DRAFT':
       colorClasses = 'bg-slate-50 text-slate-700 border-slate-200';
+      break;
+    case 'PAUSED':
+      colorClasses = 'bg-amber-50 text-amber-700 border-amber-200';
       break;
     case 'GENERATING':
     case 'QUEUED':
     case 'PROCESSING':
       colorClasses = 'bg-amber-50 text-amber-700 border-amber-200 animate-pulse';
       break;
-    case 'READY':
-    case 'PUBLISHED':
     case 'COMPLETED':
-      colorClasses = 'bg-green-50 text-green-700 border-green-200';
+      colorClasses = 'bg-blue-50 text-blue-700 border-blue-200';
       break;
     case 'ARCHIVED':
       colorClasses = 'bg-gray-100 text-gray-600 border-gray-200';
