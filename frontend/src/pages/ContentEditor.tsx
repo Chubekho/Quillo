@@ -7,6 +7,7 @@ import { useJobPoller } from '../hooks/useJobPoller';
 import { GeneratePanel } from '../components/content/GeneratePanel';
 import { ContentDisplay } from '../components/content/ContentDisplay';
 import { VersionHistory } from '../components/content/VersionHistory';
+import { ExportBar } from '../components/content/ExportBar';
 import { Spinner } from '../components/ui/Spinner';
 import { ArrowLeft, Layers, History } from 'lucide-react';
 
@@ -169,13 +170,17 @@ export const ContentEditor: React.FC = () => {
           />
         </div>
 
-        <div className="lg:col-span-7">
+        <div className="lg:col-span-7 space-y-6">
           <ContentDisplay
             body={body}
             isGenerating={isGenerating}
             onAction={handleAction}
             disabled={isGenerating}
           />
+
+          {activeContentId && body && (
+            <ExportBar contentId={activeContentId} disabled={isGenerating} />
+          )}
         </div>
       </div>
 

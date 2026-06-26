@@ -70,12 +70,14 @@ export const contentApi = {
   getVersions: (id: string) => api.get(`/content/${id}/versions`),
   listVersions: (id: string) => api.get(`/content/${id}/versions`),
   restoreVersion: (id: string, versionId: string) => api.post(`/content/${id}/versions/${versionId}/restore`),
+  export: (id: string, format: string) => api.post(`/content/${id}/export`, { format }),
 };
 
 
 export const campaignApi = {
   list: () => api.get('/campaigns'),
   create: (data: unknown) => api.post('/campaigns', data),
+  remove: (id: string) => api.delete(`/campaigns/${id}`),
 };
 
 export const orgApi = {

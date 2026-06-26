@@ -23,7 +23,7 @@ src/
 ├── App.tsx                    ← Router setup: public/protected/catch-all, QueryClient, Toaster (thêm route /content/new + /content/:id)
 ├── main.tsx                   ← Entry point
 ├── services/api.ts            ← Axios instance + interceptor auto-refresh token
-│                                 Typed methods: authApi, personaApi, contentApi (bổ sung listVersions(id), restoreVersion(id, vId)), campaignApi, orgApi, usageApi
+│                                 Typed methods: authApi, personaApi, contentApi (bổ sung listVersions(id), restoreVersion(id, vId), export(id, format)), campaignApi, orgApi, usageApi
 ├── store/
 │   └── auth.store.ts          ← Zustand: { user, isAuthenticated, login, register,
 │                                           logout, fetchMe }
@@ -40,7 +40,8 @@ src/
 │   ├── content/
 │   │   ├── GeneratePanel.tsx  ← form create/regenerate với PATCH-then-generate
 │   │   ├── ContentDisplay.tsx ← render body + 3 action buttons
-│   │   └── VersionHistory.tsx ← list + restore, 3 states
+│   │   ├── VersionHistory.tsx ← list + restore, 3 states
+│   │   └── ExportBar.tsx      ← 3 nút xuất PDF/DOCX/HTML đồng bộ, download trực tiếp qua presigned URL
 │   ├── ui/
 │   │   ├── Badge.tsx          ← badge hiển thị ContentType, ContentStatus, JobStatus
 │   │   ├── Spinner.tsx        ← spinner Tailwind đơn giản
@@ -58,15 +59,13 @@ src/
     ├── ContentEditor.tsx      ← state management, edit/create mode, poller integration
     ├── PersonaList.tsx        ← full implement, list brand personas + badge "mặc định" + actions (sửa / xóa / đặt mặc định)
     ├── PersonaEditor.tsx      ← create/edit mode, useParams, mutation create/update
-    ├── CampaignList.tsx       ← placeholder stub (implement Day 10)
+    ├── CampaignList.tsx       ← full implement, list campaigns + tạo mới inline form + lưu trữ (soft delete)
     └── UsagePage.tsx          ← placeholder stub (implement Day 10)
 
 ---
 
 ## Files CẦN implement ❌
 src/
-├── pages/
-│   └── Campaigns.tsx          ← list campaigns, tạo mới
 └── components/
     └── content/
         └── ContentCard.tsx    ← card hiển thị trong list
