@@ -59,15 +59,15 @@
 - [x] ContentList.tsx: list + filter by type/status/campaign
 
 ### Day 8
-- [ ] PersonaList.tsx + PersonaEditor.tsx
-- [ ] Form: tone, voice, targetAudience, keywords, avoidWords, exampleOutputs
-- [ ] Set default persona flow
+- [x] PersonaList.tsx + PersonaEditor.tsx
+- [x] Form: tone, voice, targetAudience, keywords, avoidWords, exampleOutputs
+- [x] Set default persona flow
 
 ### Day 9 ← QUAN TRỌNG NHẤT
-- [ ] ContentEditor.tsx: brief input + type selector + persona picker
-- [ ] Generate button → useJobPoller → polling spinner → hiện kết quả
-- [ ] Action buttons: Rewrite | Expand | Shorten
-- [ ] VersionHistory.tsx: list versions + restore
+- [x] ContentEditor.tsx: brief input + type selector + persona picker
+- [x] Generate button → useJobPoller → polling spinner → hiện kết quả
+- [x] Action buttons: Rewrite | Expand | Shorten
+- [x] VersionHistory.tsx: list versions + restore
 
 ### Day 10
 - [ ] Export UI: button PDF/DOCX/HTML → download presigned URL

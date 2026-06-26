@@ -20,23 +20,27 @@ React 18 + Vite + TypeScript. Đọc QUILLO_PROJECT_CONTEXT.md trước.
 
 ## Files đã implement ✅
 src/
-├── App.tsx                    ← Router setup: public/protected/catch-all, QueryClient, Toaster
+├── App.tsx                    ← Router setup: public/protected/catch-all, QueryClient, Toaster (thêm route /content/new + /content/:id)
 ├── main.tsx                   ← Entry point
 ├── services/api.ts            ← Axios instance + interceptor auto-refresh token
-│                                 Typed methods: authApi, personaApi (bổ sung get(id), remove(id)), contentApi, campaignApi, orgApi, usageApi
+│                                 Typed methods: authApi, personaApi, contentApi (bổ sung listVersions(id), restoreVersion(id, vId)), campaignApi, orgApi, usageApi
 ├── store/
 │   └── auth.store.ts          ← Zustand: { user, isAuthenticated, login, register,
 │                                           logout, fetchMe }
 │                                 Lưu tokens vào localStorage
 ├── hooks/
 │   └── useJobPoller.ts        ← Poll GET /content/:id/jobs/:jobId mỗi 2.5s
-│                                 Returns: { status, result, error }
+│                                 Returns: { status, result, error, jobId } (thêm jobId field vào PollResult, reset idle rõ ràng)
 │                                 Auto-stop khi status=completed|failed
 ├── components/
 │   ├── ProtectedRoute.tsx     ← auth guard: check isAuthenticated, hydrate fetchMe()
 │   │                             on reload, spinner + redirect /login kèm location.state
 │   ├── persona/
 │   │   └── PersonaForm.tsx    ← react-hook-form + zod, array chips keywords/avoidWords, exampleOutputs
+│   ├── content/
+│   │   ├── GeneratePanel.tsx  ← form create/regenerate với PATCH-then-generate
+│   │   ├── ContentDisplay.tsx ← render body + 3 action buttons
+│   │   └── VersionHistory.tsx ← list + restore, 3 states
 │   ├── ui/
 │   │   ├── Badge.tsx          ← badge hiển thị ContentType, ContentStatus, JobStatus
 │   │   ├── Spinner.tsx        ← spinner Tailwind đơn giản
@@ -50,25 +54,22 @@ src/
     ├── Login.tsx              ← form react-hook-form+zod, redirect navigate(from,{replace:true})
     ├── Register.tsx           ← form orgName/name/email/password, confirmPassword client-only
     ├── Dashboard.tsx          ← full implement, không phải placeholder (usage widget, recent content, quick actions)
-    ├── ContentList.tsx        ← full implement, server-side filter (list content, filter type/status/campaignId)
+    ├── ContentList.tsx        ← full implement, server-side filter (list content, filter type/status/campaignId, row click navigate + nút "Tạo nội dung" ở header)
+    ├── ContentEditor.tsx      ← state management, edit/create mode, poller integration
     ├── PersonaList.tsx        ← full implement, list brand personas + badge "mặc định" + actions (sửa / xóa / đặt mặc định)
     ├── PersonaEditor.tsx      ← create/edit mode, useParams, mutation create/update
     ├── CampaignList.tsx       ← placeholder stub (implement Day 10)
     └── UsagePage.tsx          ← placeholder stub (implement Day 10)
+
 ---
 
 ## Files CẦN implement ❌
 src/
 ├── pages/
-│   ├── ContentEditor.tsx      ← MAIN PAGE: brief input, generate button,
-│   │                             polling spinner, content display, edit actions
 │   └── Campaigns.tsx          ← list campaigns, tạo mới
 └── components/
     └── content/
-        ├── ContentCard.tsx    ← card hiển thị trong list
-        ├── GeneratePanel.tsx  ← brief input + type selector + persona picker
-        ├── ContentDisplay.tsx ← hiển thị generated text + action buttons
-        └── VersionHistory.tsx ← list versions, restore button
+        └── ContentCard.tsx    ← card hiển thị trong list
 
 ---
 

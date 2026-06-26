@@ -68,7 +68,10 @@ export const contentApi = {
   shorten: (id: string) => api.post(`/content/${id}/shorten`),
   pollJob: (contentId: string, jobId: string) => api.get(`/content/${contentId}/jobs/${jobId}`),
   getVersions: (id: string) => api.get(`/content/${id}/versions`),
+  listVersions: (id: string) => api.get(`/content/${id}/versions`),
+  restoreVersion: (id: string, versionId: string) => api.post(`/content/${id}/versions/${versionId}/restore`),
 };
+
 
 export const campaignApi = {
   list: () => api.get('/campaigns'),

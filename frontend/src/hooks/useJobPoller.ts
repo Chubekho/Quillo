@@ -5,6 +5,7 @@ interface PollResult {
   status: 'queued' | 'processing' | 'completed' | 'failed' | 'idle';
   result: { id: string; body: string; versionNo: number } | null;
   error: string | null;
+  jobId: string | null;
 }
 
 /**
@@ -12,25 +13,28 @@ interface PollResult {
  * Frontend tạo job → nhận jobId → truyền vào hook này → tự động poll đến khi xong.
  */
 export function useJobPoller(contentId: string | null, jobId: string | null): PollResult {
-  const [state, setState] = useState<PollResult>({ status: 'idle', result: null, error: null });
+  const [state, setState] = useState<PollResult>({ status: 'idle', result: null, error: null, jobId: null });
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (!contentId || !jobId) return;
+    if (!contentId || !jobId) {
+      setState({ status: 'idle', result: null, error: null, jobId: null });
+      return;
+    }
 
-    setState({ status: 'queued', result: null, error: null });
+    setState({ status: 'queued', result: null, error: null, jobId });
 
     const poll = async () => {
       try {
         const { data } = await contentApi.pollJob(contentId, jobId);
         const jobStatus = data.job.status.toLowerCase() as PollResult['status'];
-        setState({ status: jobStatus, result: data.result, error: null });
+        setState({ status: jobStatus, result: data.result, error: null, jobId });
 
         if (jobStatus === 'completed' || jobStatus === 'failed') {
           if (intervalRef.current) clearInterval(intervalRef.current);
         }
       } catch {
-        setState({ status: 'failed', result: null, error: 'Failed to check job status' });
+        setState({ status: 'failed', result: null, error: 'Failed to check job status', jobId });
         if (intervalRef.current) clearInterval(intervalRef.current);
       }
     };

@@ -7,7 +7,7 @@
 
 ## Trạng thái hiện tại
 
-**Sprint:** Tuần 2 / 2 | **Ngày:** Day 8 ✅ DONE
+**Sprint:** Tuần 2 / 2 | **Ngày:** Day 9 ✅ DONE
 **Branch:** main  
 **Last updated:** 2026-06-26
 
@@ -107,6 +107,18 @@
 - App.tsx: cấu trúc routing — thêm 2 route protected /personas/new và /personas/:id/edit bọc trong ProtectedRoute + AppLayout
 - Bug fix: sửa lỗi PersonaForm không pre-fill keywords, avoidWords và exampleOutputs trong edit mode bằng cách áp dụng useFieldArray và chuẩn hóa defaultValues
 
+**[Frontend — Day 9]**
+- ContentEditor.tsx: trang chính, state activeContentId/currentJobId/body, edit mode load từ GET content+activeVersion, navigate replace khi tạo mới
+- GeneratePanel.tsx: form rhf+zod (title/type/persona/brief), create flow (POST→generate), regenerate flow (PATCH title+type+brief+personaId → generate)
+- ContentDisplay.tsx: render body whitespace-pre-wrap, isGenerating spinner, 3 nút Viết lại/Mở rộng/Rút gọn (chỉ hiện khi có body)
+- VersionHistory.tsx: list versions, badge source, restore với window.confirm, 3 states
+- Routes: /content/new + /content/:id wire vào App.tsx; ContentList row click + nút Tạo
+- api.ts: bổ sung listVersions(id), restoreVersion(id, vId)
+- Bug fixes: race condition poller (jobId guard), brief+type persist khi regenerate (backend mở PATCH + frontend gửi đủ field + form reset theo id-change)
+
+**[Backend — Day 9 bugfix]**
+- content.controller.ts: mở brief + type cho PATCH /content/:id, enum validation VALID_TYPES
+
 ---
 
 ## Đang bị block 🔴
@@ -115,12 +127,12 @@
 
 ---
 
-## Tiếp theo 🟡 (Day 9)
+## Tiếp theo 🟡 (Day 10)
 
-1. ContentEditor.tsx: brief input + type selector + persona picker
-2. Generate button → useJobPoller → polling spinner → hiện kết quả
-3. Action buttons: Rewrite | Expand | Shorten
-4. VersionHistory.tsx: list versions + restore
+1. Export UI: button PDF/DOCX/HTML → download presigned URL
+2. CampaignList.tsx: full implement (thay stub) + tạo campaign mới
+3. Gắn content vào campaign (campaignId trong ContentEditor GeneratePanel)
+4. UsagePage.tsx: full implement (thay stub)
 
 ---
 
@@ -129,6 +141,7 @@
 - Bedrock blocked: dùng BEDROCK_MOCK=true tạm thời, sẽ mượn account team bootcamp có quyền Bedrock
 - Worker cần SQS queue tồn tại trước khi start (chạy setup-local.sh)
 - UX backlog — Keywords/AvoidWords chip input: cân nhắc thêm (a) helper text rõ hơn, nút "+ Thêm" bên cạnh input, (b) auto-parse khi user nhập dạng "từ1, từ2, từ3". Chưa làm vì không block flow; để Day 10 nếu còn thời gian.
+- ContentDisplay render plain text (whitespace-pre-wrap): mock output có markdown syntax (**/##) hiện raw. Cân nhắc thêm lib marked ở frontend. Để Day 10 nếu còn thời gian.
 
 ---
 
@@ -151,3 +164,7 @@
 | react-hook-form + zod cho mọi form | Type-safe validation, ít boilerplate, tái dùng pattern cho PersonaEditor Day 8 |
 | navigate(from, { replace: true }) sau login | Tránh Back button quay lại /login, UX chuẩn |
 | Server-side filter cho GET /content | Backend hỗ trợ params type/status/campaignId, tránh load toàn bộ data về client |
+| useJobPoller trả về jobId trong state | Guard pollState.jobId===currentJobId tránh race condition stale status |
+| PATCH /content/:id mở thêm brief+type | brief/type cần persist khi regenerate, không chỉ khi tạo mới |
+| Form reset theo id-change (useRef) | Tránh refetch sau generate đè giá trị user đang nhập |
+| brief+type gửi trong PATCH khi regenerate | Backend đọc từ DB trước khi generate, phải lưu đúng |

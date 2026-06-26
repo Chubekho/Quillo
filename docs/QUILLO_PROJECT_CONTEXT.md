@@ -58,9 +58,9 @@ quillo/
 │       └── worker.ts            ← SQS consumer (Lambda in prod)
 ├── frontend/
 │   └── src/
-│       ├── components/          ← đã có: ProtectedRoute.tsx, ui/(Badge, Spinner, Button, Input, Select), layout/AppLayout.tsx, persona/PersonaForm.tsx
-│       ├── hooks/               ← useJobPoller.ts ✅
-│       ├── pages/               ← đã có: Login, Register, Dashboard, ContentList, PersonaList, PersonaEditor (chưa có: ContentEditor, CampaignList (full), UsagePage (full))
+│       ├── components/          ← đã có: ProtectedRoute.tsx, ui/(Badge, Spinner, Button, Input, Select), layout/AppLayout.tsx, persona/PersonaForm.tsx, content/(GeneratePanel.tsx, ContentDisplay.tsx, VersionHistory.tsx)
+│       ├── hooks/               ← useJobPoller.ts ✅ (đã cập nhật thêm jobId trong PollResult)
+│       ├── pages/               ← đã có: Login, Register, Dashboard, ContentList, PersonaList, PersonaEditor, ContentEditor (chưa có: CampaignList (full), UsagePage (full))
 │       ├── services/api.ts      ← Axios client + typed methods ✅
 │       └── store/auth.store.ts  ← Zustand auth store ✅
 ├── infrastructure/
@@ -182,6 +182,7 @@ BEDROCK_EDIT_MODEL=us.anthropic.claude-haiku-4-5
 - Multi-tenant: mọi query đều filter `organizationId: req.user!.orgId`
 - Async jobs KHÔNG block API — luôn trả về `{ jobId }` và `202 Accepted`
 - Token tracking: mọi Bedrock call phải ghi `UsageLog`
+- `PATCH /content/:id` nhận: `title`, `type`, `brief`, `campaignId`, `personaId`, `targetAudience`, `meta` (`type` validate enum `BLOG_POST|SOCIAL_MEDIA|AD_COPY|EMAIL`)
 
 ### Frontend  
 - Zustand cho global state (auth)

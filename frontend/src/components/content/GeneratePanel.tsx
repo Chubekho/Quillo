@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -50,16 +50,21 @@ export const GeneratePanel: React.FC<GeneratePanelProps> = ({
     },
   });
 
+  const initializedId = useRef<string | undefined>(undefined);
+
   useEffect(() => {
-    if (initialData) {
+    // Chỉ reset form khi mở content piece khác (id đổi), không reset mỗi lần refetch
+    const currentId = (initialData as any)?.id ?? contentId;
+    if (initialData && currentId !== initializedId.current) {
       reset({
         title: initialData.title || '',
         type: initialData.type || 'BLOG_POST',
         personaId: initialData.personaId || '',
         brief: initialData.brief || '',
       });
+      initializedId.current = currentId;
     }
-  }, [initialData, reset]);
+  }, [initialData, contentId, reset]);
 
   const { data: personas = [], isLoading: isPersonasLoading } = useQuery({
     queryKey: ['personas'],
@@ -95,7 +100,17 @@ export const GeneratePanel: React.FC<GeneratePanelProps> = ({
         const genRes = await contentApi.generate(newId);
         onJobStarted(genRes.data.jobId, newId);
       } else {
-        // CÓ contentId → generate luôn (regenerate)
+        // CÓ contentId → PATCH để lưu thay đổi rồi generate (regenerate)
+        // Backend PATCH sau khi fix nhận: title, type, brief, campaignId, personaId, targetAudience, meta
+        const patchPayload: Record<string, unknown> = {
+          title: data.title,
+          type: data.type,
+          brief: data.brief,
+        };
+        if (data.personaId) {
+          patchPayload.personaId = data.personaId;
+        }
+        await contentApi.update(contentId, patchPayload);
         const genRes = await contentApi.generate(contentId);
         onJobStarted(genRes.data.jobId, contentId);
       }

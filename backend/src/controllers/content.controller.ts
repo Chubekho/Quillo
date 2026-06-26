@@ -86,10 +86,14 @@ export class ContentController {
   update = async (req: Request, res: Response, next: NextFunction) => {
     try {
       await this._findOwned(req.params.id, req.user!.orgId);
-      const { title, campaignId, personaId, targetAudience, meta } = req.body;
+      const { title, type, brief, campaignId, personaId, targetAudience, meta } = req.body;
+      const VALID_TYPES = ['BLOG_POST', 'SOCIAL_MEDIA', 'AD_COPY', 'EMAIL'];
+      if (type !== undefined && !VALID_TYPES.includes(type)) {
+        throw new AppError(400, `type must be one of: ${VALID_TYPES.join(', ')}`);
+      }
       const updated = await prisma.contentPiece.update({
         where: { id: req.params.id },
-        data: { title, campaignId, personaId, targetAudience, meta },
+        data: { title, type, brief, campaignId, personaId, targetAudience, meta },
       });
       res.json(updated);
     } catch (err) { next(err); }
