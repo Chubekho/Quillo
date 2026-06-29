@@ -150,26 +150,40 @@
   - Worker không đổi — chỉ thay import sang ai.service.ts
   - E2E verified: AI_PROVIDER=gemini → generate COMPLETED, UsageLog có inputTokens+outputTokens>0
 
+- CloudWatch: winston-cloudwatch transport (NODE_ENV=production), log groups /quillo/api + /quillo/worker
+  - setup-cloudwatch.sh: SNS topic, metric filters (APIErrorCount/WorkerErrorCount), 3 alarms
+  - localstack-init.sh: tạo log groups local, docker-compose.yml thêm logs service
+  - Verified: awslocal logs describe-log-groups → /quillo/api + /quillo/worker ✅
+
+- WAF: WebACL REGIONAL tạo thành công trên real AWS
+  - setup-waf.sh: AWSManagedRulesCommonRuleSet + KnownBadInputsRuleSet + RateLimit 2000/IP
+  - WebACL ARN/ID lưu vào infrastructure/outputs/ (gitignored)
+  - Associate với ALB → Day 12-13 sau khi tạo ALB
+
+- Infra fixes: localstack-init.sh fix DLQ ARN capture, setup-local.sh dùng docker compose + delegate sang localstack-init.sh
+  - export-env.sh: helper load env vars cho LocalStack restart (gitignored)
+
 ---
 
 
 ## Tiếp theo 🟡 (Day 12-13)
 
-1. CloudWatch: log groups, metric alarms (error rate, SQS queue depth) — IaC stub
-2. WAF: basic rules SQLi/XSS/rate limit — IaC stub
-3. AWS deploy: EC2 + Lambda + RDS + CloudFront + SQS production
-4. CloudFront distribution cho React SPA (domain sẵn)
-5. SNS gắn vào CloudWatch alarm → email notification
+1. AWS deploy: EC2 (Express API) + Lambda (worker.ts) + RDS PostgreSQL
+2. S3 + CloudFront distribution cho React SPA (domain sẵn)
+3. SQS queues production + Secrets Manager production secret
+4. Chạy setup-cloudwatch.sh + setup-waf.sh trên real AWS → confirm SNS email
+5. Associate WAF WebACL với ALB sau khi tạo
+6. Run prisma migrate deploy trên RDS
+7. Smoke test production endpoints
 
 ---
 
 ## Known Issues ⚠️
 
-- Bedrock blocked: dùng BEDROCK_MOCK=true tạm thời, sẽ mượn account team bootcamp có quyền Bedrock
-- Worker cần SQS queue tồn tại trước khi start (chạy setup-local.sh)
-- Task 3 (gắn campaign vào content): đã implement nhưng chưa test kỹ —
-  cần verify pre-fill campaign khi edit mode + campaignId lưu đúng DB +
-  ContentList filter by campaign hiển thị đúng
+- LocalStack reset sau docker compose restart → cần chạy: source export-env.sh && bash infrastructure/scripts/localstack-init.sh
+- DLQ RedrivePolicy trên LocalStack không verify được (subdomain URL mismatch) — không ảnh hưởng dev workflow
+- WAF associate với ALB chờ Day 12-13
+- CloudWatch alarms + SNS chờ chạy setup-cloudwatch.sh trên real AWS
 
 ---
 
@@ -205,3 +219,7 @@
 | Dynamic import sau loadSecrets() | Tránh module-load race condition: config/prisma/jwt chỉ evaluate sau khi secret nạp xong |
 | localstack-init.sh đọc từ env | Không hardcode secret trong script, đọc JWT_SECRET/DATABASE_URL/GEMINI_API_KEY từ shell env |
 | Secret bundle 1 JSON object | 1 API call lấy hết JWT+DB+Gemini, đơn giản hơn 3 secret riêng lẻ |
+| aws --endpoint-url thay awslocal | awslocal cần cài pip riêng, không có sẵn — dùng aws --endpoint-url http://localhost:4566 cho mọi LocalStack command |
+| CloudWatch log groups local (LocalStack) | Verify dev logging path trước khi deploy, không cần real AWS |
+| WAF scope REGIONAL (không CLOUDFRONT) | Gắn vào ALB — nếu sau thêm CloudFront thì tạo thêm WebACL scope CLOUDFRONT ở us-east-1 |
+| infrastructure/outputs/ gitignored | ARN/ID thật không commit lên git, chỉ lưu local |

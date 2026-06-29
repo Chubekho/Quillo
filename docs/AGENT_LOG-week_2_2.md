@@ -162,3 +162,46 @@ Ghi chú: Đảm bảo không lưu trữ bất kỳ giá trị secret thật nà
 
 ### [Doc update — Day 11] Cập nhật PROGRESS.md (Day 11 DONE, remove Bedrock block, decisions mới), INFRASTRUCTURE_CONTEXT.md (Secrets Manager done, LocalStack snippet), BACKEND_CONTEXT.md (AI Provider Notes thay Bedrock Notes), QUILLO_PROJECT_CONTEXT.md (env vars + async flow).
 
+---
+
+### [Task Day 11 - 2026-06-29 11:55] Setup CloudWatch cho Quillo (logger + IaC script)
+Làm gì: Cài đặt `winston-cloudwatch`, cấu hình Winston logger thêm transport gửi log lên CloudWatch khi `NODE_ENV=production`. Bổ sung biến `SERVICE_NAME` vào `.env.example` và `.env`. Tạo script AWS CLI `setup-cloudwatch.sh` để thiết lập Log Groups, SNS Topic, Metric Filters và Alarms trên AWS thật. Cập nhật `localstack-init.sh` để tạo log groups trong môi trường dev local và cấu hình gitignore cho thư mục `infrastructure/outputs`.
+
+Files thay đổi:
+
+backend/package.json — cài đặt gói `winston-cloudwatch`.
+backend/src/config/logger.ts — thêm `CloudWatchTransport` khi `NODE_ENV=production`.
+backend/.env.example — thêm biến `SERVICE_NAME=api`.
+backend/.env — thêm biến `SERVICE_NAME=api`.
+infrastructure/scripts/setup-cloudwatch.sh — tạo script AWS CLI thực thi IaC thiết lập CloudWatch và SNS alarms.
+infrastructure/scripts/localstack-init.sh — thêm bước tạo CloudWatch log groups `/quillo/api` và `/quillo/worker` trên LocalStack.
+infrastructure/outputs/.gitkeep — tạo thư mục chứa output deploy.
+.gitignore — bỏ qua các file `infrastructure/outputs/*.txt` chứa ARN thật.
+docker-compose.yml — thêm `logs` vào biến `SERVICES` của LocalStack để bật dịch vụ CloudWatch Logs.
+
+Kết quả: DONE
+
+Ghi chú: Đã kiểm tra toàn bộ checklist thành công: `tsc --noEmit` không lỗi, log ở chế độ dev xuất ra console bình thường không gọi CloudWatch, LocalStack tạo và verify thành công log groups, `bash -n setup-cloudwatch.sh` chuẩn cú pháp.
+
+---
+
+### [Task Day 11 - 2026-06-29 13:35] Tạo WAF WebACL script AWS CLI cho Quillo
+Làm gì: Tạo script AWS CLI `setup-waf.sh` triển khai WAF WebACL (scope REGIONAL) với các bộ quy tắc bảo vệ API khỏi SQLi, XSS và giới hạn tỷ lệ yêu cầu (Rate Limit 2000 req/IP). Kịch bản tự động trích xuất và lưu trữ WebACL ARN/ID vào thư mục `infrastructure/outputs/`.
+
+Files thay đổi:
+
+infrastructure/scripts/setup-waf.sh — tạo script AWS CLI thực thi IaC thiết lập WAF WebACL và lưu thông tin ARN/ID.
+
+Kết quả: DONE
+
+Ghi chú: Đã kiểm tra thành công toàn bộ checklist: `bash -n` kiểm tra cú pháp của `setup-waf.sh` và `setup-cloudwatch.sh` hoàn toàn hợp lệ, đồng thời xác nhận `infrastructure/outputs/` đã được thiết lập đúng trong `.gitignore`. Không có bất kỳ thay đổi nào trong mã nguồn ứng dụng (backend/frontend).
+
+---
+
+### [Fix — Day 11] localstack-init.sh: fix DLQ ARN capture dùng URL từ create-queue output.
+setup-local.sh: docker compose (space), health check chờ đủ 3 services, delegate sang localstack-init.sh.
+INFRASTRUCTURE_CONTEXT.md: cập nhật đầy đủ scripts mới, workflow restart, loại bỏ awslocal, Bedrock → Gemini.
+
+---
+
+### [Doc update — Day 11 complete] PROGRESS.md: thêm CloudWatch/WAF/infra fixes vào Done, cập nhật Next/KnownIssues/Decisions. QUILLO_PROJECT_CONTEXT.md: infrastructure/ structure + token tracking pattern.

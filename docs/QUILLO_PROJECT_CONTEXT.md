@@ -72,9 +72,12 @@ quillo/
 │       ├── services/api.ts      ← Axios client + typed methods ✅
 │       └── store/auth.store.ts  ← Zustand auth store ✅
 ├── infrastructure/
+│   ├── outputs/             ← gitignored, chứa ARN/ID từ deploy scripts
 │   └── scripts/
-│       ├── setup-local.sh       ← One-shot setup script
-│       └── localstack-init.sh   ← LocalStack queue/bucket init
+│       ├── setup-local.sh       ← One-shot first-time setup
+│       ├── localstack-init.sh   ← Re-run sau mỗi LocalStack restart
+│       ├── setup-cloudwatch.sh  ← Real AWS: Log Groups + SNS + Alarms
+│       └── setup-waf.sh         ← Real AWS: WAF WebACL REGIONAL
 └── docker-compose.yml           ← PostgreSQL + Redis + LocalStack
 └── docs/
     ├── QUILLO_PROJECT_CONTEXT.md
@@ -199,7 +202,7 @@ GEMINI_EDIT_MODEL=gemini-2.5-flash-lite
 - Mọi error đi qua `next(err)` → `errorHandler` middleware
 - Multi-tenant: mọi query đều filter `organizationId: req.user!.orgId`
 - Async jobs KHÔNG block API — luôn trả về `{ jobId }` và `202 Accepted`
-- Token tracking: mọi Bedrock call phải ghi `UsageLog`
+- Token tracking: mọi AI provider call phải ghi UsageLog (inputTokens + outputTokens từ provider response)
 - `PATCH /content/:id` nhận: `title`, `type`, `brief`, `campaignId`, `personaId`, `targetAudience`, `meta` (`type` validate enum `BLOG_POST|SOCIAL_MEDIA|AD_COPY|EMAIL`)
 
 ### Frontend  

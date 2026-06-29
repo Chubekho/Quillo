@@ -75,10 +75,10 @@
 - [x] Gắn content vào campaign
 
 ### Day 11
-- [ ] CloudWatch: log groups, metric alarms (error rate, SQS queue depth)
-- [ ] WAF: basic rules SQLi/XSS/rate limit
-- [ ] Secrets Manager: migrate DB creds + JWT secret ra khỏi .env
-- [ ] AI Provider swap: Bedrock → Gemini 2.5 Flash (provider abstraction: providers/bedrock + providers/gemini + providers/mock, flag AI_PROVIDER)
+- [x] CloudWatch: log groups, metric alarms (error rate, SQS queue depth)
+- [x] WAF: basic rules SQLi/XSS/rate limit
+- [x] Secrets Manager: migrate DB creds + JWT secret ra khỏi .env
+- [x] AI Provider swap: Bedrock → Gemini 2.5 Flash (provider abstraction: providers/bedrock + providers/gemini + providers/mock, flag AI_PROVIDER)
 
 ### Day 12-13
 - [ ] AWS deploy:

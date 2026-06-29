@@ -10,7 +10,7 @@ AWS services list + local dev setup. Đọc QUILLO_PROJECT_CONTEXT.md trước.
 |---------|----------|-------|
 | EC2 (private subnet) | Express API server | t3.small minimum |
 | Lambda | SQS worker (worker.ts) | Node 20 runtime |
-| Amazon Bedrock | Claude models | Cần enable trong AWS Console |
+| Gemini API (external) | AI content generation | Gemini 2.5 Flash via AI_PROVIDER flag |
 | SQS + DLQ | Async generation queue | Standard queue (không cần FIFO) |
 | RDS PostgreSQL Multi-AZ | Database | db.t3.micro dev, t3.small prod |
 | S3 (2 buckets) | quillo-exports, quillo-assets | |
@@ -30,36 +30,39 @@ AWS services list + local dev setup. Đọc QUILLO_PROJECT_CONTEXT.md trước.
 # docker-compose.yml
 postgres:   localhost:5432  → quillo_dev (user: quillo, pass: quillo_secret)
 redis:      localhost:6379
-localstack: localhost:4566  → emulate SQS + S3 + SecretsManager
+localstack: localhost:4566  → emulate SQS + S3 + SecretsManager + CloudWatch Logs
 ```
 
 ---
 
 ## LocalStack Resources
 
-Tạo 1 lần bằng script hoặc lệnh thủ công:
+Tạo tự động khi chạy setup lần đầu. Workflow:
 
 ```bash
-export AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=ap-southeast-1
+# Lần đầu setup:
+bash infrastructure/scripts/setup-local.sh
 
-# SQS
-aws sqs create-queue --queue-name quillo-generation-dlq --endpoint-url http://localhost:4566
-aws sqs create-queue --queue-name quillo-generation-queue \
-  --attributes "VisibilityTimeout=120" --endpoint-url http://localhost:4566
-
-# S3
-aws s3 mb s3://quillo-exports --endpoint-url http://localhost:4566
-aws s3 mb s3://quillo-assets  --endpoint-url http://localhost:4566
-
-# Secrets Manager (chạy tự động qua localstack-init.sh)
-# Script đọc từ env vars — không hardcode
-# JWT_SECRET, DATABASE_URL, GEMINI_API_KEY phải set trong shell trước khi chạy
-awslocal secretsmanager create-secret \
-  --name quillo/app-secrets \
-  --secret-string "{\"JWT_SECRET\":\"$JWT_SECRET\",\"DATABASE_URL\":\"$DATABASE_URL\",\"GEMINI_API_KEY\":\"$GEMINI_API_KEY\"}"
+# Sau mỗi lần restart LocalStack (cần env vars):
+source export-env.sh   # load JWT_SECRET, DATABASE_URL, GEMINI_API_KEY từ backend/.env
+bash infrastructure/scripts/localstack-init.sh
 ```
 
-Verify: `aws sqs list-queues --endpoint-url http://localhost:4566`
+Resources được tạo bởi localstack-init.sh:
+- S3: quillo-exports (có CORS), quillo-assets
+- SQS: quillo-generation-dlq, quillo-generation-queue (với RedrivePolicy → DLQ)
+- Secrets Manager: quillo/app-secrets (JSON: JWT_SECRET + DATABASE_URL + GEMINI_API_KEY)
+- CloudWatch Logs: /quillo/api, /quillo/worker
+
+Verify sau khi chạy:
+```bash
+aws --endpoint-url http://localhost:4566 sqs list-queues
+aws --endpoint-url http://localhost:4566 logs describe-log-groups --region ap-southeast-1
+aws --endpoint-url http://localhost:4566 secretsmanager get-secret-value \
+  --secret-id quillo/app-secrets --region ap-southeast-1
+```
+
+⚠️ KHÔNG dùng awslocal — dùng aws --endpoint-url http://localhost:4566 cho mọi LocalStack command.
 
 ---
 
@@ -77,19 +80,35 @@ Private subnet: EC2, RDS
 
 ---
 
-## Scripts
-infrastructure/scripts/
-├── setup-local.sh      ← One-shot: Docker + queues + S3 + npm install + migrate + seed
-└── localstack-init.sh  ← Chạy tự động khi LocalStack start (qua docker-compose volume)
+## Deployment Scripts (Day 12-13)
+
+Thứ tự chạy khi deploy production:
+1. bash infrastructure/scripts/setup-cloudwatch.sh  (cần ALARM_EMAIL env var)
+2. bash infrastructure/scripts/setup-waf.sh
+3. Tạo EC2 + ALB → lấy ALB ARN
+4. aws wafv2 associate-web-acl \
+     --web-acl-arn $(cat infrastructure/outputs/waf-webacl-arn.txt) \
+     --resource-arn <ALB_ARN> \
+     --region ap-southeast-1
 
 ---
 
-## Chưa implement
+## Scripts
+infrastructure/scripts/
+├── setup-local.sh        ← One-shot first-time setup: Docker + LocalStack init + npm + migrate + seed
+├── localstack-init.sh    ← Re-run sau mỗi LocalStack restart (source export-env.sh trước)
+├── setup-cloudwatch.sh   ← Real AWS: tạo Log Groups, SNS Topic, Metric Filters, Alarms
+└── setup-waf.sh          ← Real AWS: tạo WAF WebACL (REGIONAL) với SQLi/XSS/RateLimit rules
 
-- CDK/Terraform IaC cho production deployment
+export-env.sh ← Local only, gitignored. Load JWT_SECRET/DATABASE_URL/GEMINI_API_KEY từ backend/.env
+
+---
+
+## Chưa implement (cần khi deploy Day 12-13)
+- CDK/Terraform IaC thay thế AWS CLI scripts (optional)
 - CI/CD pipeline (GitHub Actions)
-- CloudWatch alarms setup
-- WAF rules configuration
-- Secrets Manager production secret (quillo/app-secrets với giá trị production thật — hiện LocalStack only)
-- Lambda deployment package
+- Lambda deployment package (worker.ts → zip + upload)
 - RDS backup policy
+- WAF associate với ALB (sau khi tạo ALB xong)
+- CloudWatch alarms + SNS subscription confirm (chạy setup-cloudwatch.sh + confirm email)
+- Secrets Manager production secret (giá trị production thật — hiện LocalStack only)
