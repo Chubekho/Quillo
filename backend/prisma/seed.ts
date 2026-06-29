@@ -5,10 +5,9 @@
  */
 
 import 'dotenv/config';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../src/config/database';
 import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Seeding Quillo database...');
@@ -29,7 +28,7 @@ async function main() {
   // User
   const user = await prisma.user.upsert({
     where: { email: 'admin@acme.demo' },
-    update: {},
+    update: { passwordHash: await bcrypt.hash('password123', 12) },
     create: {
       organizationId: org.id,
       email: 'admin@acme.demo',

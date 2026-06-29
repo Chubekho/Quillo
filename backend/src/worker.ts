@@ -7,20 +7,12 @@
  */
 
 import 'dotenv/config';
-import {
-  ReceiveMessageCommand,
-  DeleteMessageCommand,
-} from '@aws-sdk/client-sqs';
-import { prisma } from './config/database';
-import { sqsClient, AWS_CONFIG } from './config/aws';
-import { BedrockService } from './services/ai/bedrock.service';
-import { usageService } from './services/usage.service';
-import { logger } from './config/logger';
-
-const bedrockService = new BedrockService();
+import { loadSecrets } from './config/secrets';
+import { ReceiveMessageCommand, DeleteMessageCommand } from '@aws-sdk/client-sqs';
 
 // ── Lambda Handler (production) ───────────────────────────
 export const handler = async (event: { Records: SQSRecord[] }) => {
+  await loadSecrets();
   const results = await Promise.allSettled(
     event.Records.map((record) => processMessage(JSON.parse(record.body))),
   );
@@ -35,6 +27,9 @@ export const handler = async (event: { Records: SQSRecord[] }) => {
 
 // ── Local dev: polling mode ────────────────────────────────
 async function pollLocal() {
+  await loadSecrets();
+  const { logger } = await import('./config/logger');
+  const { sqsClient, AWS_CONFIG } = await import('./config/aws');
   logger.info('Quillo Worker: starting local polling mode...');
 
   while (true) {
@@ -70,6 +65,12 @@ async function pollLocal() {
 
 // ── Core processing logic ─────────────────────────────────
 async function processMessage(message: GenerationMessage) {
+  const { logger } = await import('./config/logger');
+  const { prisma } = await import('./config/database');
+  const { usageService } = await import('./services/usage.service');
+  const { AiService } = await import('./services/ai/ai.service');
+  const bedrockService = new AiService();
+
   const { jobId, contentId, orgId, operation, payload } = message;
   logger.info(`Processing job ${jobId}: ${operation} on content ${contentId}`);
 
@@ -210,6 +211,7 @@ async function processMessage(message: GenerationMessage) {
 
 // ── Helpers ───────────────────────────────────────────────
 async function getNextVersionNo(contentId: string): Promise<number> {
+  const { prisma } = await import('./config/database');
   const last = await prisma.contentVersion.findFirst({
     where: { contentId },
     orderBy: { versionNo: 'desc' },
@@ -244,7 +246,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // ── Entry point cho local dev ─────────────────────────────
 if (process.env.NODE_ENV !== 'production') {
   pollLocal().catch((err) => {
-    logger.error('Worker crashed:', err);
+    console.error('Worker crashed:', err);
     process.exit(1);
   });
 }
