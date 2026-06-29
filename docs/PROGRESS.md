@@ -7,7 +7,7 @@
 
 ## Trạng thái hiện tại
 
-**Sprint:** Tuần 2 / 2 | **Ngày:** Day 11 ✅ DONE
+**Sprint:** Tuần 2 / 2 | **Ngày:** Day 12 (in progress)
 **Branch:** main  
 **Last updated:** 2026-06-29
 
@@ -163,18 +163,29 @@
 - Infra fixes: localstack-init.sh fix DLQ ARN capture, setup-local.sh dùng docker compose + delegate sang localstack-init.sh
   - export-env.sh: helper load env vars cho LocalStack restart (gitignored)
 
+**[Backend/Infra — Day 12 — Code Artifacts]**
+- Lambda worker bundle: esbuild.lambda.mjs (bundle-all strategy, không external), build-lambda.sh → infrastructure/outputs/worker-lambda.zip (2.2MB, 1 file index.js)
+- backend/mock-aws.js: mock CloudWatchLogs cho esbuild bundle (tránh resolve lỗi winston-cloudwatch)
+- Dockerfile multi-stage: builder (npm install + prisma generate + tsc) → runtime (node:20-slim, non-root user, HEALTHCHECK). Docker build verified ✅
+- backend/.dockerignore, backend/.env.production.example
+- app.ts hardening: trust proxy khi NODE_ENV=production, morgan 'combined' format prod
+- Frontend prod build: npm run build → dist/ verified ✅ (VITE_API_BASE_URL đã đọc từ env, api.ts không cần sửa)
+- frontend/.env.production.example, infrastructure/scripts/deploy-frontend.sh (S3 sync + CF invalidation, bash -n clean)
+- Installed: @aws-sdk/client-cloudwatch-logs (missing dep winston-cloudwatch), @types/aws-lambda, esbuild (devDep)
+
 ---
 
 
 ## Tiếp theo 🟡 (Day 12-13)
 
-1. AWS deploy: EC2 (Express API) + Lambda (worker.ts) + RDS PostgreSQL
-2. S3 + CloudFront distribution cho React SPA (domain sẵn)
-3. SQS queues production + Secrets Manager production secret
-4. Chạy setup-cloudwatch.sh + setup-waf.sh trên real AWS → confirm SNS email
-5. Associate WAF WebACL với ALB sau khi tạo
-6. Run prisma migrate deploy trên RDS
-7. Smoke test production endpoints
+1. Provision AWS resources (human): RDS Multi-AZ → EC2 → ALB → S3 (quillo-frontend + quillo-exports) → CloudFront → SQS prod + DLQ → Secrets Manager prod secret
+2. Chạy setup-cloudwatch.sh + setup-waf.sh trên real AWS → confirm SNS email
+3. Associate WAF WebACL với ALB
+4. Deploy backend: push Docker image lên ECR → EC2 pull + run (hoặc dùng zip deploy trực tiếp)
+5. Deploy Lambda: aws lambda update-function-code --zip-file fileb://infrastructure/outputs/worker-lambda.zip
+6. Deploy frontend: S3_BUCKET=<bucket> CF_DISTRIBUTION_ID=<id> bash infrastructure/scripts/deploy-frontend.sh
+7. prisma migrate deploy lên RDS
+8. Smoke test production endpoints
 
 ---
 

@@ -44,6 +44,10 @@ bằng Generative AI (Amazon Bedrock / Claude). Điểm khác biệt cốt lõi:
 ## Cấu trúc thư mục
 quillo/
 ├── backend/
+│   ├── esbuild.lambda.mjs   ← bundle worker → Lambda zip
+│   ├── mock-aws.js          ← CloudWatchLogs mock cho esbuild
+│   ├── Dockerfile           ← multi-stage EC2 image
+│   ├── .dockerignore
 │   ├── prisma/
 │   │   ├── schema.prisma        ← 11 bảng, đã hoàn chỉnh
 │   │   └── seed.ts              ← Dev seed data
@@ -77,7 +81,9 @@ quillo/
 │       ├── setup-local.sh       ← One-shot first-time setup
 │       ├── localstack-init.sh   ← Re-run sau mỗi LocalStack restart
 │       ├── setup-cloudwatch.sh  ← Real AWS: Log Groups + SNS + Alarms
-│       └── setup-waf.sh         ← Real AWS: WAF WebACL REGIONAL
+│       ├── setup-waf.sh         ← Real AWS: WAF WebACL REGIONAL
+│       ├── build-lambda.sh      ← tạo worker-lambda.zip
+│       └── deploy-frontend.sh   ← S3 sync + CF invalidation
 └── docker-compose.yml           ← PostgreSQL + Redis + LocalStack
 └── docs/
     ├── QUILLO_PROJECT_CONTEXT.md

@@ -205,3 +205,63 @@ INFRASTRUCTURE_CONTEXT.md: cập nhật đầy đủ scripts mới, workflow res
 ---
 
 ### [Doc update — Day 11 complete] PROGRESS.md: thêm CloudWatch/WAF/infra fixes vào Done, cập nhật Next/KnownIssues/Decisions. QUILLO_PROJECT_CONTEXT.md: infrastructure/ structure + token tracking pattern.
+
+---
+
+### [Task Day 12.1 - 2026-06-29 15:37] Backend Deployment Packaging (Lambda worker + EC2 Docker + prod hardening)
+Làm gì: Chuẩn bị toàn bộ artifact code-side để deploy backend lên AWS — tạo Lambda bundle script (esbuild), build-lambda.sh, Dockerfile multi-stage cho EC2, .dockerignore, .env.production.example, và hardening app.ts (trust proxy + morgan production).
+
+Files thay đổi:
+
+backend/esbuild.lambda.mjs — Tạo mới: esbuild bundler cho worker.ts → dist-lambda/index.js. Platform=node, target=node20, format=cjs. Externals: @prisma/client, @prisma/adapter-pg, pg, @aws-sdk/*, winston, winston-cloudwatch. Bundle size: 91.1kb.
+infrastructure/scripts/build-lambda.sh — Tạo mới: script idempotent: prisma generate → esbuild → copy external node_modules vào staging → zip thành infrastructure/outputs/worker-lambda.zip. `bash -n` clean.
+backend/Dockerfile — Tạo mới: multi-stage (builder: npm install + prisma generate + tsc; runtime: node:20-slim, non-root user nodejs:1001, HEALTHCHECK). NODE_ENV=production. Hỗ trợ cả npm ci (khi có lockfile) và npm install (fallback).
+backend/.dockerignore — Tạo mới: loại node_modules, .env, dist-lambda, logs, test files.
+backend/.env.production.example — Tạo mới: template đầy đủ cho prod, USE_SECRETS_MANAGER=true, ALLOWED_ORIGINS=<placeholder>, SQS/S3 prod URLs, không có AWS_ENDPOINT_URL (prod dùng AWS thật).
+backend/src/app.ts — Sửa: thêm `app.set('trust proxy', 1)` khi NODE_ENV=production (Express sau ALB — đúng client IP cho rate-limit); morgan 'combined' format trong prod (CloudWatch). CORS đã đọc từ ALLOWED_ORIGINS env (không hardcode).
+backend/package.json — Thêm devDeps: @types/aws-lambda ^8.10.162, esbuild 0.24.2.
+
+Kết quả: DONE
+
+Ghi chú:
+- **Bước 0.7 — Prisma engine nhánh đã chọn: NHÁNH CLEAN (không cần binary engine)**. Xác nhận: database.ts dùng `PrismaPg` driver adapter + `new PrismaClient({ adapter })`. Với Prisma v7 + @prisma/adapter-pg (queryCompiler GA), toàn bộ query đi qua pg Pool — Lambda zip không cần native .so engine binary. schema.prisma KHÔNG bị sửa (không cần binaryTargets).
+- app.ts CORS đã dùng `process.env.ALLOWED_ORIGINS` (không phải CORS_ORIGIN như task spec ghi) — giữ nguyên env name cho backward compat với .env.example hiện có.
+- esbuild phải mark `@aws-sdk/*` và `winston-cloudwatch` là external vì winston-cloudwatch pull `@aws-sdk/client-cloudwatch-logs` nhưng package đó không được install. build-lambda.sh copy các clients AWS cần thiết vào staging ZIP.
+- Docker build test: `package-lock.json` không có trong repo → Dockerfile dùng conditional `npm ci || npm install`. **Khuyến nghị human**: commit `package-lock.json` vào git để có reproducible builds.
+- Verify đã chạy: `npx tsc --noEmit` ✓, `node esbuild.lambda.mjs` ✓ (91.1kb), `bash -n build-lambda.sh` ✓, Docker build ✓ (sau khi fix package-lock fallback).
+
+---
+
+### [Fix Day 12.1 - 2026-06-29 16:00] Lambda bundle: bundle all deps thay vì external + staging copy
+Làm gì: Khắc phục vấn đề build-lambda.sh tạo ra file ZIP quá nhỏ (24K) do thiết lập external node_modules sai đường dẫn. Chuyển đổi chiến lược sang "bundle all" (xóa danh sách external trong esbuild), đóng gói toàn bộ runtime dependencies vào một file index.js duy nhất và đơn giản hóa quy trình build-lambda.sh.
+
+Files thay đổi:
+
+backend/esbuild.lambda.mjs — Xóa toàn bộ mảng `external` (`external: []`), cấu hình `platform: 'node'`, `target: 'node20'`, `format: 'cjs'`, `logLevel: 'info'` để esbuild đóng gói toàn bộ dependencies vào 1 file duy nhất. Sử dụng `alias` và `inject` với `mock-aws.js` để giải quyết triệt để lỗi resolve `@aws-sdk/client-cloudwatch-logs` từ `winston-cloudwatch`.
+backend/mock-aws.js — Tạo mới file mock giả lập `CloudWatchLogs` cho esbuild bundle.
+infrastructure/scripts/build-lambda.sh — Đơn giản hóa quy trình, loại bỏ hoàn toàn phần Assemble ZIP staging area (step 4 cũ). Flow mới gồm 3 bước gọn nhẹ: 1. prisma generate, 2. node esbuild.lambda.mjs, 3. zip trực tiếp `index.js` thành `worker-lambda.zip`.
+
+Kết quả: DONE
+
+Ghi chú: 
+- Đã verify thành công: `bash infrastructure/scripts/build-lambda.sh` chạy mượt mà, không có WARN/lỗi.
+- File ZIP output đạt dung lượng 2.2MB (bundle size 7.7MB uncompressed), chứa đầy đủ toàn bộ dependencies.
+- Kiểm tra `unzip -l infrastructure/outputs/worker-lambda.zip` xác nhận chỉ có 1 file `index.js` duy nhất.
+- Môi trường dev local (`npm run dev`) hoàn toàn không bị ảnh hưởng.
+
+---
+
+### [Task Day 12.2 - 2026-06-29 16:23] Frontend Deployment Packaging (Vite prod build + S3 deploy script)
+Làm gì: Chuẩn bị các file cấu hình, template môi trường và kịch bản deploy tự động để triển khai ứng dụng React SPA (Vite) lên AWS S3 và CloudFront.
+
+Files thay đổi:
+
+frontend/.env.production.example — Tạo mới file template môi trường production chứa biến `VITE_API_BASE_URL=https://<your-api-domain>/api/v1` (sử dụng đúng tên biến hiện có trong codebase để đảm bảo tính nhất quán, tinh gọn chỉ với 1 biến duy nhất).
+infrastructure/scripts/deploy-frontend.sh — Tạo mới kịch bản triển khai tự động lên S3 và CloudFront. Script thực hiện kiểm tra đầu vào (guard check) bắt buộc đối với `S3_BUCKET` và `CF_DISTRIBUTION_ID`, hỗ trợ tùy chọn `AWS_REGION` (mặc định `ap-southeast-1`), đồng bộ hóa file (`aws s3 sync --delete`) và tạo invalidation trên CloudFront (`aws cloudfront create-invalidation`). Script đạt chuẩn `bash -n` clean và in log tiến trình tường minh.
+
+Kết quả: DONE
+
+Ghi chú:
+- **Xác nhận Bước 0.3**: Kiểm tra file `frontend/src/services/api.ts` cho thấy ứng dụng ĐÃ ĐỌC baseURL từ biến môi trường (`import.meta.env.VITE_API_BASE_URL`). Do đó, tuân thủ đúng yêu cầu "Nếu đã đọc env rồi → không sửa", file `api.ts` hoàn toàn không bị chỉnh sửa.
+- File template môi trường sử dụng tên biến `VITE_API_BASE_URL` (thay vì `VITE_API_URL` như trong mô tả task) để tương thích 100% với mã nguồn hiện tại (`api.ts`, `.env`, `.env.example`).
+- Đã thực hiện kiểm tra đầy đủ: `cd frontend && npm run build` thành công xuất ra `dist/` (gồm `index.html` và `assets/`) không gặp bất kỳ lỗi TypeScript hay Vite nào; `bash -n infrastructure/scripts/deploy-frontend.sh` kiểm tra cú pháp hợp lệ hoàn toàn; môi trường dev local tiếp tục hoạt động bình thường với fallback localhost.

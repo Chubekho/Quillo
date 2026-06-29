@@ -1,0 +1,41 @@
+# Docker build context exclusions for Quillo API
+# Keep the build context lean — only send what Docker actually needs
+
+# ── Dependencies (reinstalled during build) ──────────────────
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Environment files (never bake secrets into image) ─────────
+.env
+.env.*
+!.env.production.example
+
+# ── TypeScript build artifacts ────────────────────────────────
+dist
+dist-lambda
+
+# ── Lambda bundle (not needed in Docker context) ──────────────
+esbuild.lambda.mjs
+
+# ── Logs ──────────────────────────────────────────────────────
+logs
+*.log
+
+# ── Git / IDE ─────────────────────────────────────────────────
+.git
+.gitignore
+.gitattributes
+.DS_Store
+.vscode
+.idea
+
+# ── Test files ────────────────────────────────────────────────
+**/*.test.ts
+**/*.spec.ts
+coverage
+
+# ── Documentation ─────────────────────────────────────────────
+README.md
+docs

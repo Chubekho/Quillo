@@ -98,7 +98,9 @@ infrastructure/scripts/
 ├── setup-local.sh        ← One-shot first-time setup: Docker + LocalStack init + npm + migrate + seed
 ├── localstack-init.sh    ← Re-run sau mỗi LocalStack restart (source export-env.sh trước)
 ├── setup-cloudwatch.sh   ← Real AWS: tạo Log Groups, SNS Topic, Metric Filters, Alarms
-└── setup-waf.sh          ← Real AWS: tạo WAF WebACL (REGIONAL) với SQLi/XSS/RateLimit rules
+├── setup-waf.sh          ← Real AWS: tạo WAF WebACL (REGIONAL) với SQLi/XSS/RateLimit rules
+├── build-lambda.sh       ← Bundle worker.ts → dist-lambda/index.js → worker-lambda.zip (esbuild bundle-all)
+└── deploy-frontend.sh    ← S3 sync frontend/dist/ + CloudFront invalidation (cần S3_BUCKET + CF_DISTRIBUTION_ID)
 
 export-env.sh ← Local only, gitignored. Load JWT_SECRET/DATABASE_URL/GEMINI_API_KEY từ backend/.env
 
@@ -107,7 +109,9 @@ export-env.sh ← Local only, gitignored. Load JWT_SECRET/DATABASE_URL/GEMINI_AP
 ## Chưa implement (cần khi deploy Day 12-13)
 - CDK/Terraform IaC thay thế AWS CLI scripts (optional)
 - CI/CD pipeline (GitHub Actions)
-- Lambda deployment package (worker.ts → zip + upload)
+- Lambda deploy: worker-lambda.zip đã sẵn, chạy aws lambda update-function-code
+- ECR repository + push Docker image quillo-api (hoặc deploy EC2 trực tiếp từ git pull)
+- CloudFront distribution tạo mới, S3 bucket quillo-frontend với static website hosting
 - RDS backup policy
 - WAF associate với ALB (sau khi tạo ALB xong)
 - CloudWatch alarms + SNS subscription confirm (chạy setup-cloudwatch.sh + confirm email)

@@ -21,9 +21,18 @@ import healthRoutes from './routes/health.routes';
 const app = express();
 const API = process.env.API_PREFIX || '/api/v1';
 
+// ── Trust proxy (required when running behind ALB / nginx in production) ──
+// Enables correct client IP resolution for rate-limiting and secure cookies.
+// Value 1 = trust first proxy hop (ALB); increase for multiple proxy hops.
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // ── Security middleware ──────────────────────────────────────
 app.use(helmet());
 
+// CORS — origin list read from env so prod domain is set without code changes.
+// Dev fallback: localhost:5173 (Vite default)
 app.use(cors({
   origin: (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').split(','),
   credentials: true,
@@ -45,7 +54,8 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(compression());
-app.use(morgan('dev'));
+// Use 'combined' format in production (structured access logs → CloudWatch)
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // ── Routes ───────────────────────────────────────────────────
 app.use(`${API}/health`, healthRoutes);
