@@ -1,4 +1,5 @@
 import winston from 'winston';
+import CloudWatchTransport from 'winston-cloudwatch';
 
 const { combine, timestamp, colorize, printf, json } = winston.format;
 
@@ -16,3 +17,15 @@ export const logger = winston.createLogger({
   transports: [new winston.transports.Console()],
   // Production: thêm transport gửi lên CloudWatch hoặc file
 });
+
+if (process.env.NODE_ENV === 'production') {
+  const serviceName = process.env.SERVICE_NAME ?? 'api'; // 'api' hoặc 'worker'
+  logger.add(new CloudWatchTransport({
+    logGroupName: `/quillo/${serviceName}`,
+    logStreamName: () => new Date().toISOString().split('T')[0], // stream theo ngày
+    awsRegion: process.env.AWS_REGION ?? 'ap-southeast-1',
+    messageFormatter: ({ level, message, ...meta }) =>
+      JSON.stringify({ level, message, ...meta }),
+    retentionInDays: 30,
+  }));
+}

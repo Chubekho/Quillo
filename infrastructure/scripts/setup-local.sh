@@ -2,55 +2,43 @@
 set -e
 
 echo "==> 1. Starting Docker Compose (detached)..."
-docker-compose up -d
+docker compose up -d
 
 echo "==> 2. Waiting for services ready..."
 echo "Waiting for PostgreSQL..."
 sleep 8
 
 echo "Waiting for LocalStack..."
-timeout=30
+timeout=60
 elapsed=0
 while [ $elapsed -lt $timeout ]; do
-  if curl -s http://localhost:4566/_localstack/health | grep '"sqs": "available"' > /dev/null; then
-    echo "LocalStack is ready!"
+  HEALTH=$(curl -s http://localhost:4566/_localstack/health 2>/dev/null)
+  SQS_OK=$(echo $HEALTH | grep -c '"sqs".*"available"' || true)
+  LOGS_OK=$(echo $HEALTH | grep -c '"logs".*"available"' || true)
+  SECRET_OK=$(echo $HEALTH | grep -c '"secretsmanager".*"available"' || true)
+  if [ "$SQS_OK" -gt 0 ] && [ "$LOGS_OK" -gt 0 ] && [ "$SECRET_OK" -gt 0 ]; then
+    echo "LocalStack is ready! (sqs + logs + secretsmanager)"
     break
   fi
   sleep 2
   elapsed=$((elapsed + 2))
 done
+if [ $elapsed -ge $timeout ]; then
+  echo "ERROR: LocalStack timeout after ${timeout}s"
+  exit 1
+fi
 
-echo "==> 3. Creating SQS queues..."
-export AWS_ACCESS_KEY_ID=test
-export AWS_SECRET_ACCESS_KEY=test
-export AWS_DEFAULT_REGION=us-east-1
+echo "==> 3. Initializing LocalStack resources (SQS + S3 + Secrets + CloudWatch)..."
+echo "  NOTE: Requires JWT_SECRET, DATABASE_URL, GEMINI_API_KEY in env"
+echo "  Run: source export-env.sh before this script if not already set"
+if [ -z "$JWT_SECRET" ] || [ -z "$GEMINI_API_KEY" ]; then
+  echo "  WARNING: Secret env vars not set — skipping localstack-init.sh"
+  echo "  Run manually: source export-env.sh && bash infrastructure/scripts/localstack-init.sh"
+else
+  bash infrastructure/scripts/localstack-init.sh
+fi
 
-aws sqs create-queue \
-   --queue-name quillo-generation-dlq \
-   --endpoint-url http://localhost:4566 || true
-
-DLQ_ARN=$(aws sqs get-queue-attributes \
-   --queue-url http://localhost:4566/000000000000/quillo-generation-dlq \
-   --attribute-names QueueArn \
-   --query 'Attributes.QueueArn' \
-   --output text \
-   --endpoint-url http://localhost:4566)
-
-aws sqs create-queue \
-   --queue-name quillo-generation-queue \
-   --attributes "{\"VisibilityTimeout\":\"120\",\"MessageRetentionPeriod\":\"86400\",\"RedrivePolicy\":\"{\\\"deadLetterTargetArn\\\":\\\"$DLQ_ARN\\\",\\\"maxReceiveCount\\\":\\\"3\\\"}\"}" \
-   --endpoint-url http://localhost:4566 || aws sqs set-queue-attributes \
-   --queue-url http://localhost:4566/000000000000/quillo-generation-queue \
-   --attributes "{\"VisibilityTimeout\":\"120\",\"MessageRetentionPeriod\":\"86400\",\"RedrivePolicy\":\"{\\\"deadLetterTargetArn\\\":\\\"$DLQ_ARN\\\",\\\"maxReceiveCount\\\":\\\"3\\\"}\"}" \
-   --endpoint-url http://localhost:4566
-
-aws sqs list-queues --endpoint-url http://localhost:4566
-
-echo "==> 4. Creating S3 buckets..."
-aws s3 mb s3://quillo-exports --endpoint-url http://localhost:4566 || true
-aws s3 mb s3://quillo-assets --endpoint-url http://localhost:4566 || true
-
-echo "==> 5. Installing npm dependencies..."
+echo "==> 4. Installing npm dependencies..."
 echo "Installing root dependencies..."
 npm install
 
@@ -60,12 +48,12 @@ cd backend && npm install
 echo "Installing frontend dependencies..."
 cd ../frontend && npm install
 
-echo "==> 6. Running Prisma migrate & seed..."
+echo "==> 5. Running Prisma migrate & seed..."
 cd ../backend
 npx prisma migrate deploy
 npx prisma db seed
 
-echo "==> 7. Print success summary"
+echo "==> 6. Print success summary"
 echo "✅ Setup done!"
 echo "   API:    http://localhost:3001"
 echo "   Front:  http://localhost:5173"

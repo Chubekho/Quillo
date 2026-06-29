@@ -44,3 +44,7 @@ coverage/
 
 # Docker
 .docker/
+
+# Infrastructure outputs
+infrastructure/outputs/*.txt
+export-env.sh

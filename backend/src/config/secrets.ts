@@ -8,7 +8,7 @@ export async function loadSecrets(): Promise<void> {
 
   try {
     const config: { region?: string; endpoint?: string } = {
-      region: process.env.AWS_REGION || 'us-east-1',
+      region: process.env.AWS_REGION || 'ap-southeast-1',
     };
 
     if (process.env.AWS_ENDPOINT_URL) {

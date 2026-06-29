@@ -8,15 +8,15 @@ fi
 
 echo "==> Quillo: Khởi tạo AWS resources trên LocalStack..."
 
-REGION=us-east-1
+REGION=ap-southeast-1
 ENDPOINT=http://localhost:4566
 
 # ── S3 Buckets ──────────────────────────────────────────────
 echo "  Creating S3 buckets..."
-awslocal s3 mb s3://quillo-exports --region $REGION
-awslocal s3 mb s3://quillo-assets --region $REGION
+aws --endpoint-url http://localhost:4566 s3 mb s3://quillo-exports --region $REGION
+aws --endpoint-url http://localhost:4566 s3 mb s3://quillo-assets --region $REGION
 
-awslocal s3api put-bucket-cors --bucket quillo-exports --cors-configuration '{
+aws --endpoint-url http://localhost:4566 s3api put-bucket-cors --bucket quillo-exports --cors-configuration '{
   "CORSRules": [{
     "AllowedOrigins": ["http://localhost:5173"],
     "AllowedMethods": ["GET", "PUT", "POST"],
@@ -29,29 +29,36 @@ awslocal s3api put-bucket-cors --bucket quillo-exports --cors-configuration '{
 echo "  Creating SQS queues..."
 
 # Dead Letter Queue trước
-awslocal sqs create-queue \
+DLQ_URL=$(aws --endpoint-url http://localhost:4566 sqs create-queue \
   --queue-name quillo-generation-dlq \
-  --region $REGION
+  --region $REGION \
+  --query 'QueueUrl' --output text)
 
-DLQ_ARN=$(awslocal sqs get-queue-attributes \
-  --queue-url http://localhost:4566/000000000000/quillo-generation-dlq \
+DLQ_ARN=$(aws --endpoint-url http://localhost:4566 sqs get-queue-attributes \
+  --queue-url "$DLQ_URL" \
   --attribute-names QueueArn \
   --query 'Attributes.QueueArn' \
   --output text)
 
 # Main generation queue với DLQ
-awslocal sqs create-queue \
+MAIN_URL=$(aws --endpoint-url http://localhost:4566 sqs create-queue \
   --queue-name quillo-generation-queue \
   --region $REGION \
   --attributes "{
     \"VisibilityTimeout\": \"120\",
     \"MessageRetentionPeriod\": \"86400\",
     \"RedrivePolicy\": \"{\\\"deadLetterTargetArn\\\":\\\"$DLQ_ARN\\\",\\\"maxReceiveCount\\\":\\\"3\\\"}\"
-  }"
+  }" \
+  --query 'QueueUrl' --output text)
+echo "  Queue URL: $MAIN_URL"
 
-echo "  Queue ARN: $(awslocal sqs get-queue-attributes \
-  --queue-url http://localhost:4566/000000000000/quillo-generation-queue \
-  --attribute-names QueueArn --query 'Attributes.QueueArn' --output text)"
+# Capture ARN từ MAIN_URL:
+MAIN_ARN=$(aws --endpoint-url http://localhost:4566 sqs get-queue-attributes \
+  --queue-url "$MAIN_URL" \
+  --attribute-names QueueArn \
+  --query 'Attributes.QueueArn' \
+  --output text)
+echo "  Queue ARN: $MAIN_ARN"
 
 # ── Secrets Manager ─────────────────────────────────────────
 echo "  Creating Secrets Manager secret..."
@@ -60,17 +67,23 @@ SECRET_STRING=$(cat <<EOF
 EOF
 )
 
-if awslocal secretsmanager describe-secret --secret-id quillo/app-secrets --region $REGION >/dev/null 2>&1; then
-  awslocal secretsmanager put-secret-value \
+if aws --endpoint-url http://localhost:4566 secretsmanager describe-secret --secret-id quillo/app-secrets --region $REGION >/dev/null 2>&1; then
+  aws --endpoint-url http://localhost:4566 secretsmanager put-secret-value \
     --secret-id quillo/app-secrets \
     --secret-string "$SECRET_STRING" \
     --region $REGION
 else
-  awslocal secretsmanager create-secret \
+  aws --endpoint-url http://localhost:4566 secretsmanager create-secret \
     --name quillo/app-secrets \
     --secret-string "$SECRET_STRING" \
     --region $REGION
 fi
+
+# CloudWatch Log Groups (local dev)
+echo "  Creating CloudWatch log groups..."
+aws --endpoint-url http://localhost:4566 logs create-log-group --log-group-name /quillo/api --region $REGION 2>/dev/null || true
+aws --endpoint-url http://localhost:4566 logs create-log-group --log-group-name /quillo/worker --region $REGION 2>/dev/null || true
+echo "  CloudWatch log groups: OK"
 
 echo "==> Quillo: LocalStack init done ✓"
 

@@ -38,7 +38,7 @@ services:
     ports:
       - "4566:4566"
     environment:
-      SERVICES: s3,sqs,secretsmanager
+      SERVICES: s3,sqs,secretsmanager,logs
       DEFAULT_REGION: ap-southeast-1
       LOCALSTACK_AUTH_TOKEN: ""
     volumes:
