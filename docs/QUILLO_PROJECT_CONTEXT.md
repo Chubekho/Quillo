@@ -2,7 +2,7 @@
 
 > AI marketing copy platform in your brand's voice  
 > Stack: Node/Express + React + PostgreSQL + AWS  
-> Trạng thái: Tuần 1 / 2 tuần — đang xây foundation
+> Trạng thái: Tuần 2 / 2 tuần — Frontend MVP hoàn thành, chuẩn bị deploy
 
 ---
 
@@ -33,7 +33,7 @@ bằng Generative AI (Amazon Bedrock / Claude). Điểm khác biệt cốt lõi:
 | Frontend | React 18 + Vite + TypeScript + Zustand + TanStack Query |
 | Backend | Node.js + Express + TypeScript + Prisma ORM |
 | Database | PostgreSQL (RDS) — local: Docker |
-| AI | Amazon Bedrock (Claude Sonnet cho generate, Claude Haiku cho edit) |
+| AI | Amazon Bedrock (provider mocked) / Gemini 2.5 Flash (active via AI_PROVIDER flag) |
 | Queue | Amazon SQS + DLQ — local: LocalStack |
 | Storage | Amazon S3 — local: LocalStack |
 | Cache | Redis (ElastiCache) — local: Docker |
@@ -52,7 +52,13 @@ quillo/
 │       ├── controllers/         ← auth ✅  content ✅  persona ✅
 │       ├── middlewares/         ← auth, errorHandler, notFound
 │       ├── routes/              ← 8 route files
-│       ├── services/ai/         ← bedrock.service, generationQueue.service
+│       ├── services/ai/         ← provider abstraction layer
+│       │   ├── providers/
+│       │   │   ├── bedrock.provider.ts   ← Bedrock SDK (giữ lại, tắt bằng flag)
+│       │   │   ├── gemini.provider.ts    ← Gemini 2.5 Flash (active)
+│       │   │   └── mock.provider.ts      ← BEDROCK_MOCK logic tách ra
+│       │   ├── ai.service.ts             ← dispatcher đọc AI_PROVIDER, export hàm cho worker
+│       │   └── generationQueue.service.ts
 │       ├── app.ts               ← Express setup
 │       ├── server.ts            ← Entry point
 │       └── worker.ts            ← SQS consumer (Lambda in prod)
@@ -60,7 +66,9 @@ quillo/
 │   └── src/
 │       ├── components/          ← đã có: ProtectedRoute.tsx, ui/(Badge, Spinner, Button, Input, Select), layout/AppLayout.tsx, persona/PersonaForm.tsx, content/(GeneratePanel.tsx, ContentDisplay.tsx, VersionHistory.tsx)
 │       ├── hooks/               ← useJobPoller.ts ✅ (đã cập nhật thêm jobId trong PollResult)
-│       ├── pages/               ← đã có: Login, Register, Dashboard, ContentList, PersonaList, PersonaEditor, ContentEditor (chưa có: CampaignList (full), UsagePage (full))
+│       ├── pages/ ← đã có: Login, Register, Dashboard, ContentList, PersonaList,
+│       │           PersonaEditor, ContentEditor, CampaignList, UsagePage
+│       │           content/(ExportBar.tsx thêm Day 10)
 │       ├── services/api.ts      ← Axios client + typed methods ✅
 │       └── store/auth.store.ts  ← Zustand auth store ✅
 ├── infrastructure/
@@ -122,7 +130,11 @@ GET    /content/:id/exports    ← list exports của content piece
 POST   /content/:id/export     ← generate PDF/DOCX/HTML → S3 presigned URL
 
 
-GET    /campaigns              ← stub, chưa implement
+GET    /campaigns
+POST   /campaigns
+GET    /campaigns/:id
+PATCH  /campaigns/:id
+DELETE /campaigns/:id          ← soft delete → status=ARCHIVED
 
 GET    /health
 
@@ -144,7 +156,7 @@ Worker (worker.ts / Lambda):
 → Check quota của org
 → Load ContentPiece + BrandPersona
 → Build prompt (persona-aware)
-→ Gọi Amazon Bedrock
+→ Gọi AI Provider qua ai.service.ts (Gemini 2.5 Flash mặc định)
 → Lưu ContentVersion vào DB
 → Update job status = COMPLETED
 → Ghi UsageLog
@@ -157,6 +169,8 @@ Frontend poll GET /content/:id/jobs/:jobId mỗi 2.5s
 ## Environment Variables Cần Thiết (backend/.env)
 DATABASE_URL=postgresql://quillo:quillo_secret@localhost:5432/quillo_dev
 JWT_SECRET=<min 32 chars>
+USE_SECRETS_MANAGER=false         ← true khi deploy production
+APP_SECRETS_ID=quillo/app-secrets ← tên secret trong Secrets Manager
 REDIS_URL=redis://localhost:6379
 AWS_REGION=ap-southeast-1
 AWS_ACCESS_KEY_ID=test            ← dùng "test" cho LocalStack
@@ -167,6 +181,10 @@ SQS_DLQ_URL=http://localhost:4566/000000000000/quillo-generation-dlq
 S3_EXPORTS_BUCKET=quillo-exports
 BEDROCK_GENERATE_MODEL=us.anthropic.claude-sonnet-4-5
 BEDROCK_EDIT_MODEL=us.anthropic.claude-haiku-4-5
+AI_PROVIDER=gemini                    ← bedrock | gemini | mock
+GEMINI_API_KEY=<key từ Google AI Studio>
+GEMINI_GENERATE_MODEL=gemini-2.5-flash
+GEMINI_EDIT_MODEL=gemini-2.5-flash-lite
 
 ---
 

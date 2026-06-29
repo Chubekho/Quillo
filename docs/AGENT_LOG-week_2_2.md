@@ -94,3 +94,71 @@ Kết quả verify contract trước khi implement:
 2. `GET /org` → response shape: `{ id, name, slug, plan, monthlyTokenQuota, currentMonthTokens, quotaResetAt, usage: { ... } }`.
 3. `QUILLO_PROJECT_CONTEXT.md` → `BEDROCK_GENERATE_MODEL=us.anthropic.claude-sonnet-4-5`, `BEDROCK_EDIT_MODEL=us.anthropic.claude-haiku-4-5`.
 4. Đã kiểm tra `tsc --noEmit` thành công 100% sạch không lỗi.
+
+---
+
+[Context update] Ghi nhận quyết định AI provider swap: Bedrock → Gemini 2.5 Flash, provider abstraction pattern (AI_PROVIDER flag). Updated: PROGRESS.md, ROADMAP.md, QUILLO_PROJECT_CONTEXT.md, BACKEND_CONTEXT.md.
+
+---
+
+### [Task Day 11 - 2026-06-29 10:01] Migrate JWT_SECRET + DATABASE_URL ra AWS Secrets Manager
+Làm gì: Migrate `JWT_SECRET`, `DATABASE_URL` và `GEMINI_API_KEY` ra AWS Secrets Manager có hỗ trợ feature flag `USE_SECRETS_MANAGER` và hoạt động hoàn chỉnh với LocalStack. Bọc quá trình khởi tạo server và worker trong `loadSecrets()` trước khi import các module khác.
+
+Files thay đổi:
+
+backend/src/config/secrets.ts — tạo mới hàm `loadSecrets()` đọc từ Secrets Manager và ghi đè vào `process.env`.
+backend/src/server.ts — refactor bọc `bootstrap()` và chuyển sang dynamic import sau khi nạp secret.
+backend/src/worker.ts — refactor bọc `pollLocal()` và `handler()` chuyển sang dynamic import sau khi nạp secret.
+infrastructure/scripts/localstack-init.sh — bổ sung lệnh tạo/cập nhật secret `quillo/app-secrets` idempotent trên LocalStack.
+backend/.env + backend/.env.example — bổ sung `USE_SECRETS_MANAGER` và `APP_SECRETS_ID`.
+
+Kết quả: DONE
+
+Ghi chú: Đã hoàn tất kiểm tra toàn bộ checklist 5 bước:
+1. `USE_SECRETS_MANAGER=false`: app boot bình thường, login OK (regression check).
+2. Chạy `localstack-init.sh`: verify `awslocal secretsmanager get-secret-value --secret-id quillo/app-secrets` trả JSON chính xác.
+3. `USE_SECRETS_MANAGER=true`: log "Secrets loaded", login thành công, GET /content trả data.
+4. `USE_SECRETS_MANAGER=true` với worker: worker start thành công, xử lý job generate COMPLETED.
+5. Bỏ `JWT_SECRET` + `GEMINI_API_KEY` khỏi `.env` với `USE_SECRETS_MANAGER=true`: vẫn login và generate content thành công.
+
+---
+
+### [Task Day 11 - 2026-06-29 10:35] Tách services/ai/ thành provider abstraction, thêm Gemini 2.5 Flash provider
+Làm gì: Refactor toàn bộ tầng AI service, thiết lập kiến trúc provider abstraction hỗ trợ linh hoạt chuyển đổi qua biến môi trường `AI_PROVIDER`. Tích hợp thành công Google Gemini 2.5 Flash (generate) và Gemini 2.5 Flash Lite (edit).
+
+Files thay đổi:
+
+backend/src/services/ai/providers/mock.provider.ts — tách logic mockInvoke và buildMockContent.
+backend/src/services/ai/providers/bedrock.provider.ts — tách logic gọi AWS Bedrock thật và xử lý fallback an toàn trên LocalStack.
+backend/src/services/ai/providers/gemini.provider.ts — tích hợp SDK `@google/generative-ai`, tự động ánh xạ model generate/edit và tính toán usage token.
+backend/src/services/ai/ai.service.ts — service định tuyến động dựa vào `AI_PROVIDER`.
+backend/src/services/ai/bedrock.service.ts — Đã xoá.
+backend/src/worker.ts — cập nhật import từ `ai.service.ts`.
+backend/.env.example — thêm cấu hình mẫu cho Gemini và AI_PROVIDER.
+
+Kết quả: DONE
+
+Ghi chú: Đã hoàn tất kiểm tra toàn bộ checklist:
+1. `tsc --noEmit`: không có lỗi TypeScript.
+2. `AI_PROVIDER=mock`: generate content thành công, body là mock copy.
+3. `AI_PROVIDER=gemini`: generate thành công với AI content thật từ Gemini 2.5 Flash.
+4. Kiểm tra DB: `UsageLog` lưu đầy đủ `inputTokens` + `outputTokens > 0`.
+5. Thử expand: job COMPLETED thành công (dùng `GEMINI_EDIT_MODEL`).
+6. `AI_PROVIDER=bedrock`: server/worker start bình thường, log warning rõ ràng khi invoke mà không bị crash.
+
+---
+
+### [Task Day 11 - 2026-06-29 11:10] Cập nhật localstack-init.sh sử dụng SECRET_STRING động từ biến môi trường
+Làm gì: Loại bỏ hoàn toàn chuỗi cấu hình secret hardcode trong kịch bản khởi tạo LocalStack. Thiết lập cơ chế tạo chuỗi `SECRET_STRING` động từ các biến môi trường `JWT_SECRET`, `DATABASE_URL`, `GEMINI_API_KEY` và bổ sung điều kiện kiểm tra (guard check) ngay đầu script.
+
+Files thay đổi:
+- infrastructure/scripts/localstack-init.sh — Thêm điều kiện kiểm tra biến môi trường và sử dụng chuỗi `SECRET_STRING` động cho các lệnh `put-secret-value` và `create-secret`.
+
+Kết quả: DONE
+
+Ghi chú: Đảm bảo không lưu trữ bất kỳ giá trị secret thật nào trong mã nguồn kịch bản khởi tạo, hoàn toàn tuân thủ các quy tắc bảo mật.
+
+---
+
+### [Doc update — Day 11] Cập nhật PROGRESS.md (Day 11 DONE, remove Bedrock block, decisions mới), INFRASTRUCTURE_CONTEXT.md (Secrets Manager done, LocalStack snippet), BACKEND_CONTEXT.md (AI Provider Notes thay Bedrock Notes), QUILLO_PROJECT_CONTEXT.md (env vars + async flow).
+

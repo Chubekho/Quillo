@@ -50,16 +50,18 @@ src/
 │   ├── org.service.ts        ← getOrg (embed getUsageSummary), updateOrg (validate fields)
 │   ├── usage.service.ts      ← getCurrentMonthUsage, getUsageByModel, getUsageSummary,
 │   │                            checkQuota (shared cho cả API và worker)
-│   └── ai/
-│       ├── generationQueue.service.ts ← enqueue(): tạo DB job → gửi SQS message
-│       └── bedrock.service.ts         ← invoke(): select model by operation,
-│                                         buildPrompt() per ContentType + operation
-│                                         4 operations: generate/rewrite/expand/shorten
-│                                         BEDROCK_MOCK=true → mock mode (không gọi AWS)
+│   └── ai/                    ← AI provider abstraction layer
+│       ├── providers/
+│       │   ├── bedrock.provider.ts   ← Bedrock SDK implementation (giữ lại, inactive khi AI_PROVIDER!=bedrock)
+│       │   ├── gemini.provider.ts    ← Gemini 2.5 Flash via @google/generative-ai SDK (active default)
+│       │   └── mock.provider.ts      ← Mock provider (BEDROCK_MOCK logic, dùng khi AI_PROVIDER=mock)
+│       ├── ai.service.ts             ← Dispatcher: đọc AI_PROVIDER env → import provider tương ứng
+│       │                                Export: invoke(prompt, type) → GenerationResult (contract không đổi)
+│       └── generationQueue.service.ts ← SQS enqueue (không thay đổi)
 ├── app.ts    ← helmet, cors, rateLimit, compression, morgan, routes
 ├── server.ts ← bootstrap(): prisma.$connect, redis.ping, app.listen
 └── worker.ts ← pollLocal() (dev) / handler() (Lambda prod) ← processMessage():
-               checkQuota() → load piece+persona → invoke Bedrock
+               checkQuota() → load piece+persona → invoke AI provider (ai.service.ts → gemini/bedrock/mock)
                → transaction(version+job+usageLog+org.currentMonthTokens)
                quota exceeded: FAILED + return (không throw → tránh retry/DLQ)
 
@@ -96,12 +98,13 @@ aws sqs create-queue --queue-name quillo-generation-queue \
 
 ---
 
-## Bedrock Notes
+## AI Provider Notes
 
-- Không có LocalStack support → cần AWS credentials thật để test AI
-- Model IDs có thể thay đổi — verify trong AWS Console > Bedrock > Model catalog
-- `us.` prefix cho cross-region inference (khuyến nghị dùng)
-- Pricing ước tính trong `worker.ts::estimateCost()` — update theo AWS pricing page
+- Active provider: Gemini 2.5 Flash (AI_PROVIDER=gemini)
+- Token tracking: gemini.provider.ts đọc usageMetadata.promptTokenCount / candidatesTokenCount
+- Switching provider: đổi AI_PROVIDER env var (gemini | mock | bedrock), restart server
+- Bedrock: giữ trong providers/bedrock.provider.ts, cần AWS credentials thật để hoạt động
+- Gemini free tier: 1500 req/day, 15 RPM — đủ cho demo, billing OFF để giữ free tier
 
 ---
 

@@ -50,6 +50,13 @@ aws sqs create-queue --queue-name quillo-generation-queue \
 # S3
 aws s3 mb s3://quillo-exports --endpoint-url http://localhost:4566
 aws s3 mb s3://quillo-assets  --endpoint-url http://localhost:4566
+
+# Secrets Manager (chạy tự động qua localstack-init.sh)
+# Script đọc từ env vars — không hardcode
+# JWT_SECRET, DATABASE_URL, GEMINI_API_KEY phải set trong shell trước khi chạy
+awslocal secretsmanager create-secret \
+  --name quillo/app-secrets \
+  --secret-string "{\"JWT_SECRET\":\"$JWT_SECRET\",\"DATABASE_URL\":\"$DATABASE_URL\",\"GEMINI_API_KEY\":\"$GEMINI_API_KEY\"}"
 ```
 
 Verify: `aws sqs list-queues --endpoint-url http://localhost:4566`
@@ -83,6 +90,6 @@ infrastructure/scripts/
 - CI/CD pipeline (GitHub Actions)
 - CloudWatch alarms setup
 - WAF rules configuration
-- Secrets Manager integration (hiện đang dùng .env)
+- Secrets Manager production secret (quillo/app-secrets với giá trị production thật — hiện LocalStack only)
 - Lambda deployment package
 - RDS backup policy

@@ -7,9 +7,9 @@
 
 ## Trạng thái hiện tại
 
-**Sprint:** Tuần 2 / 2 | **Ngày:** Day 10 ✅ DONE
+**Sprint:** Tuần 2 / 2 | **Ngày:** Day 11 ✅ DONE
 **Branch:** main  
-**Last updated:** 2026-06-27
+**Last updated:** 2026-06-29
 
 ---
 
@@ -135,19 +135,31 @@
   quota=null → "Không giới hạn", breakdown byModel (model/tokens/requestCount/cost),
   thông tin plan + model generate/edit, 3 states (loading/error/empty)
 
+**[Backend/Infra — Day 11]**
+- Secrets Manager: bundle JWT_SECRET + DATABASE_URL + GEMINI_API_KEY vào 1 JSON secret (quillo/app-secrets)
+  - secrets.ts: loadSecrets() đọc từ SecretsManagerClient, ghi đè process.env
+  - Feature flag USE_SECRETS_MANAGER=true/false — false không đụng LocalStack (dev an toàn)
+  - server.ts + worker.ts: dynamic import sau await loadSecrets() — đảm bảo thứ tự load đúng
+  - localstack-init.sh: tạo/update secret idempotent, đọc từ env vars (không hardcode)
+
+- AI Provider Swap: Bedrock → Gemini 2.5 Flash qua provider abstraction
+  - providers/gemini.provider.ts: @google/generative-ai SDK, token mapping usageMetadata
+  - providers/mock.provider.ts: tách từ bedrock.service.ts cũ
+  - providers/bedrock.provider.ts: giữ lại, inactive khi AI_PROVIDER!=bedrock
+  - ai.service.ts: dispatcher đọc AI_PROVIDER env, export invokeModel() contract không đổi
+  - Worker không đổi — chỉ thay import sang ai.service.ts
+  - E2E verified: AI_PROVIDER=gemini → generate COMPLETED, UsageLog có inputTokens+outputTokens>0
+
 ---
 
-## Đang bị block 🔴
 
-- **Bedrock API invocation**: free tier không hỗ trợ technical, sẽ mượn account team có quyền Bedrock; tạm dùng BEDROCK_MOCK.
+## Tiếp theo 🟡 (Day 12-13)
 
----
-
-## Tiếp theo 🟡 (Day 11)
-
-1. CloudWatch: log groups, metric alarms (error rate, SQS queue depth)
-2. WAF: basic rules SQLi/XSS/rate limit
-3. Secrets Manager: migrate DB creds + JWT secret ra khỏi .env
+1. CloudWatch: log groups, metric alarms (error rate, SQS queue depth) — IaC stub
+2. WAF: basic rules SQLi/XSS/rate limit — IaC stub
+3. AWS deploy: EC2 + Lambda + RDS + CloudFront + SQS production
+4. CloudFront distribution cho React SPA (domain sẵn)
+5. SNS gắn vào CloudWatch alarm → email notification
 
 ---
 
@@ -187,3 +199,9 @@
 | Export sync trả downloadUrl | Backend trả presigned URL trực tiếp trong response body field `downloadUrl` |
 | campaignId optional trong GeneratePanel | Campaign không bắt buộc, gửi null nếu không chọn |
 | CampaignList dùng useState cho inline form | Form 2 field đơn giản, không cần react-hook-form/zod |
+| AI_PROVIDER flag + provider abstraction | Bedrock cần charge để unlock — tách providers/ thành bedrock/gemini/mock, dispatcher đọc AI_PROVIDER env, worker không đổi |
+| Gemini 2.5 Flash cho generate, Flash-Lite cho edit | Free tier không cần thẻ, 1500 req/day đủ cho demo, rate limit 15 RPM tương thích pipeline async SQS |
+| USE_SECRETS_MANAGER feature flag | false = đọc .env (dev), true = fetch Secrets Manager (prod) — pattern giống BEDROCK_MOCK |
+| Dynamic import sau loadSecrets() | Tránh module-load race condition: config/prisma/jwt chỉ evaluate sau khi secret nạp xong |
+| localstack-init.sh đọc từ env | Không hardcode secret trong script, đọc JWT_SECRET/DATABASE_URL/GEMINI_API_KEY từ shell env |
+| Secret bundle 1 JSON object | 1 API call lấy hết JWT+DB+Gemini, đơn giản hơn 3 secret riêng lẻ |
