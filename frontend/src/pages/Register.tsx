@@ -74,7 +74,7 @@ export const Register: React.FC = () => {
             <input
               id="orgName"
               type="text"
-              placeholder="Công ty Cổ phần Acme"
+              placeholder="Công ty Cổ phần ABC"
               {...register('orgName')}
               className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 ${
                 errors.orgName ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'

@@ -94,8 +94,8 @@ export const UsagePage: React.FC = () => {
   const now = new Date();
   const currentMonthStr = new Intl.DateTimeFormat('vi-VN', { month: 'numeric', year: 'numeric' }).format(now);
 
-  const BEDROCK_GENERATE_MODEL = 'us.anthropic.claude-sonnet-4-5';
-  const BEDROCK_EDIT_MODEL = 'us.anthropic.claude-haiku-4-5';
+  const BEDROCK_GENERATE_MODEL = 'gemini-2.5-flash';
+  const BEDROCK_EDIT_MODEL = 'gemini-2.5-flash-lite';
 
   const percent = quota !== null && quota > 0 ? (used / quota) * 100 : 0;
   // Nếu usage >= 90% quota → progress bar màu đỏ (cảnh báo)
@@ -156,9 +156,8 @@ export const UsagePage: React.FC = () => {
                 </div>
                 <div className="mt-4 w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
                   <div
-                    className={`h-2.5 rounded-full transition-all duration-500 ${
-                      isWarning ? 'bg-red-600' : 'bg-indigo-600'
-                    }`}
+                    className={`h-2.5 rounded-full transition-all duration-500 ${isWarning ? 'bg-red-600' : 'bg-indigo-600'
+                      }`}
                     style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
                   ></div>
                 </div>

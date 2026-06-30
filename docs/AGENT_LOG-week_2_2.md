@@ -265,3 +265,28 @@ Ghi chú:
 - **Xác nhận Bước 0.3**: Kiểm tra file `frontend/src/services/api.ts` cho thấy ứng dụng ĐÃ ĐỌC baseURL từ biến môi trường (`import.meta.env.VITE_API_BASE_URL`). Do đó, tuân thủ đúng yêu cầu "Nếu đã đọc env rồi → không sửa", file `api.ts` hoàn toàn không bị chỉnh sửa.
 - File template môi trường sử dụng tên biến `VITE_API_BASE_URL` (thay vì `VITE_API_URL` như trong mô tả task) để tương thích 100% với mã nguồn hiện tại (`api.ts`, `.env`, `.env.example`).
 - Đã thực hiện kiểm tra đầy đủ: `cd frontend && npm run build` thành công xuất ra `dist/` (gồm `index.html` và `assets/`) không gặp bất kỳ lỗi TypeScript hay Vite nào; `bash -n infrastructure/scripts/deploy-frontend.sh` kiểm tra cú pháp hợp lệ hoàn toàn; môi trường dev local tiếp tục hoạt động bình thường với fallback localhost.
+
+---
+
+### [Fix Day 12.2 - 2026-06-30 09:43] Sửa lỗi Rendered fewer hooks than expected sau login
+Làm gì: Fix bug trắng trang sau khi đăng nhập thành công.
+- **Bug**: Rendered fewer hooks than expected sau login
+- **Root cause**: early return `if (isAuthenticated)` đặt trước hook `useForm` vi phạm Rules of Hooks (khi login thành công, component re-render và skip `useForm`).
+- **File sửa**:
+  - `frontend/src/pages/Login.tsx`: Đã sửa.
+  - `frontend/src/pages/Register.tsx`: Đã kiểm tra nhưng không có pattern early-return tương tự nên không sửa.
+- **Cách fix**: Di chuyển toàn bộ hook calls (cụ thể là `useForm`) lên TRƯỚC khối `if (isAuthenticated) return <Navigate ... />`.
+
+Kết quả: DONE
+
+Ghi chú: Đã kiểm tra `tsc --noEmit` thành công (0 lỗi).
+
+---
+
+### [Bug Fix Day 12.2 - 2026-06-30 09:55] Fix CSS ExportBar đè lên VersionHistory
+Làm gì: Fix giao diện 2 cột của ContentEditor gây overflow.
+- **Bug**: ExportBar đè lên VersionHistory khi toggle lịch sử phiên bản
+- **Root cause**: `items-stretch` + `h-full` trên 2 cột không đều chiều cao tự nhiên gây overflow ExportBar ra ngoài grid container.
+- **File sửa**: `frontend/src/pages/ContentEditor.tsx` (sửa 1 dòng class, `items-stretch` → `items-start`).
+
+Kết quả: DONE

@@ -160,7 +160,7 @@ export const ContentEditor: React.FC = () => {
       </div>
 
       {/* Layout 2 vùng responsive */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <div className="lg:col-span-5">
           <GeneratePanel
             contentId={activeContentId}

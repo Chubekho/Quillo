@@ -16,21 +16,21 @@
 
 ## Tuần 1 — Foundation & Core Pipeline
 
-### Day 1-2 ✅ DONE
-- Monorepo scaffold: backend + frontend + infrastructure
-- Docker Compose: PostgreSQL + Redis + LocalStack
-- Prisma schema 11 bảng multi-tenant
-- Config layer: database, redis, aws, logger
-- Express app + middleware
-- Auth: register/login/refresh/logout/me + JWT rotation
-- Brand Persona CRUD + Redis cache
-- Content CRUD + async AI operations → SQS
-- worker.ts: SQS consumer → Bedrock → ContentVersion → UsageLog
-- Prisma v7 fix: prisma.config.ts + adapter-pg
-- Frontend Vite bootstrap + App.tsx skeleton
-- docs/: context files, GEMINI_INSTRUCTION.md, AGENT_LOG.md
+### Day 1-2
+- [x] Monorepo scaffold: backend + frontend + infrastructure
+- [x] Docker Compose: PostgreSQL + Redis + LocalStack
+- [x] Prisma schema 11 bảng multi-tenant
+- [x] Config layer: database, redis, aws, logger
+- [x] Express app + middleware
+- [x] Auth: register/login/refresh/logout/me + JWT rotation
+- [x] Brand Persona CRUD + Redis cache
+- [x] Content CRUD + async AI operations → SQS
+- [x] worker.ts: SQS consumer → Bedrock → ContentVersion → UsageLog
+- [x] Prisma v7 fix: prisma.config.ts + adapter-pg
+- [x] Frontend Vite bootstrap + App.tsx skeleton
+- [x] docs/: context files, GEMINI_INSTRUCTION.md, AGENT_LOG.md
 
-### Day 3 ← ĐANG LÀM
+### Day 3
 - [x] Campaign controller + CRUD (thay stub 501)
 - [x] Test end-to-end: register → persona → content → generate → poll job
 - [x] Verify worker.ts chạy đúng với LocalStack SQS

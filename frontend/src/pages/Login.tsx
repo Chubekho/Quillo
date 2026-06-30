@@ -19,10 +19,6 @@ export const Login: React.FC = () => {
   const { login, isAuthenticated } = useAuthStore();
   const [apiError, setApiError] = useState<string | null>(null);
 
-  if (isAuthenticated) {
-    return <Navigate to="/" replace />;
-  }
-
   const {
     register,
     handleSubmit,
@@ -30,6 +26,10 @@ export const Login: React.FC = () => {
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
   });
+
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
 
   const onSubmit = async (data: LoginFormValues) => {
     setApiError(null);
