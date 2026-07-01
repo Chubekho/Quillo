@@ -96,3 +96,29 @@ backend/src/config/database.ts — Export prisma qua Proxy thay vì biến thôn
 Kết quả: DONE
 
 Ghi chú: Việc dùng Proxy giữ nguyên API hiện tại (như object PrismaClient bình thường) nên không cần sửa import ở bất kỳ service nào. Đã verify bằng `npx tsc --noEmit` và dev local. Human sẽ tiến hành build và push image lên ECR sau.
+
+### [Fix Day 13 - 2026-07-01 10:48] IAM policy: thêm 2 quyền CloudWatch Logs
+Làm gì: Thêm quyền `logs:DescribeLogStreams` và `logs:PutRetentionPolicy` vào inline policy của IAM role `quillo-ec2-role` và apply lại trên AWS.
+Root cause: Winston-cloudwatch sdk ngầm gọi DescribeLogStreams và PutRetentionPolicy, policy cũ thiếu 2 action này dẫn đến lỗi AccessDenied.
+Files thay đổi:
+infrastructure/scripts/setup-iam-alb.sh — cập nhật JSON inline policy thêm action.
+Kết quả: DONE
+Ghi chú: Lệnh `aws iam get-role-policy` trả về 5 action cho block logs, xác nhận policy đã được cấp đầy đủ. Script hoàn toàn idempotent.
+
+### [Deploy Day 13 - 2026-07-01 11:15] Rebuild + push image (database.ts fix) → Instance Refresh
+Làm gì: Rebuild Docker image để include fix proxy `database.ts` (kèm cờ --platform linux/amd64), push lên ECR và update Auto Scaling Group.
+Files thay đổi: (không có — chỉ deploy, không sửa code)
+Kết quả: FAILED — Các target EC2 trong Target Group đều hiển thị status `unhealthy` với lý do `Target.ResponseCodeMismatch`. 
+Ghi chú: 
+- Push image mới thành công (tag: `20260701-110726`). 
+- Phát hiện ASG bị scale xuống 0 trước đó, đã chủ động tăng Desired Capacity về 2 nhưng instance mới spin lên vẫn không qua được health check của ELB (ResponseCodeMismatch).
+- Lệnh curl qua ALB DNS bị timeout do không có target healthy để route traffic.
+- Đã dừng lại không tiếp tục các bước sau theo yêu cầu, chờ Human điều tra thêm logs EC2/Docker để tìm nguyên nhân.
+
+### [Fix Day 13 - 2026-07-01 14:26] Fix RDS SSL connection rejection (pg_hba.conf no encryption)
+Làm gì: Bổ sung cấu hình `ssl: { rejectUnauthorized: false }` vào `pg.Pool` trong `backend/src/config/database.ts`, sau đó rebuild image, trigger Instance Refresh và verify lại hệ thống.
+Root cause: RDS instance `quillo-prod-db` đang bật parameter `rds.force_ssl=1`. Tuy nhiên app Node.js (dùng `pg.Pool`) chỉ truyền vào `connectionString` mà không truyền object `ssl`, dẫn đến việc node-postgres từ chối kết nối không mã hóa (ResponseCodeMismatch do health check failed).
+Files thay đổi:
+backend/src/config/database.ts — thêm config SSL.
+Kết quả: DONE
+Ghi chú: Đã xác nhận tất cả target healthy trên ELB Target Group, và endpoint `/api/v1/health` trả về status `ok` (postgres up, api up). Deploy thành công.

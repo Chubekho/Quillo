@@ -7,7 +7,7 @@
 
 ## Trạng thái hiện tại
 
-**Sprint:** Tuần 2 / 2 | **Ngày:** Day 12-13 (in progress)
+**Sprint:** Tuần 2 / 2 | **Ngày:** Day 13 (in progress)
 **Branch:** main  
 **Last updated:** 2026-07-01
 
@@ -190,21 +190,24 @@
 - database.ts: pg.Pool khởi tạo lazy qua Proxy — fix DATABASE_URL=undefined khi module load trước loadSecrets()
 - IAM quillo-ec2-role: thiếu logs:DescribeLogStreams + logs:PutRetentionPolicy (winston-cloudwatch cần) — chưa fix
 
+**[Infra/Deploy — Day 13]**
+- IAM quillo-ec2-role: thêm logs:DescribeLogStreams + logs:PutRetentionPolicy (fix AccessDenied winston-cloudwatch)
+- database.ts: thêm ssl: { rejectUnauthorized: false } vào pg.Pool
+  - Root cause: RDS force_ssl=1 reject unencrypted connection, pg.Pool không truyền ssl config
+- Rebuild + push image → Instance Refresh → ASG 2/2 target healthy
+- Verify E2E: curl ALB /api/v1/health → 200 {"status":"ok","postgres":"up","api":"up"}
+
 ---
 
 
 ## Tiếp theo 🟡
 
-1. Fix IAM policy: thêm logs:DescribeLogStreams + logs:PutRetentionPolicy vào quillo-ec2-role
-2. Rebuild + push Docker image (database.ts đã fix)
-3. Trigger instance refresh ASG → verify target health = healthy
-4. Test curl ALB DNS: curl http://quillo-alb-512124280.ap-southeast-1.elb.amazonaws.com/api/v1/health
-5. prisma migrate deploy lên RDS
-6. Lambda deploy: setup-lambda.sh + SQS event source mapping
-7. CloudFront + frontend deploy (S3 quillo-frontend-prod)
-8. WAF associate với ALB + setup-cloudwatch.sh confirm SNS
-9. Domain DNS: api.domain → ALB, app.domain → CloudFront
-10. Smoke test full flow production
+1. prisma migrate deploy lên RDS (Task 13.3)
+2. Lambda deploy: setup-lambda.sh + SQS event source mapping (Task 13.4)
+3. CloudFront + frontend deploy — S3 quillo-frontend-prod (Task 13.5)
+4. WAF associate với ALB + setup-cloudwatch.sh confirm SNS (Task 13.6)
+5. Domain DNS: api.domain → ALB, app.domain → CloudFront
+6. Smoke test full flow production
 
 ---
 
@@ -214,7 +217,7 @@
 - DLQ RedrivePolicy trên LocalStack không verify được (subdomain URL mismatch) — không ảnh hưởng dev workflow
 - WAF associate với ALB chờ Day 12-13
 - CloudWatch alarms + SNS chờ chạy setup-cloudwatch.sh trên real AWS
-- IAM logs:DescribeLogStreams + logs:PutRetentionPolicy chưa có trong quillo-ec2-role → winston-cloudwatch log AccessDenied (không fatal nhưng cần fix)
+
 - ALLOWED_ORIGINS trong Launch Template vẫn là placeholder CloudFront → cần update sau task CloudFront
 
 ---
@@ -255,3 +258,4 @@
 | CloudWatch log groups local (LocalStack) | Verify dev logging path trước khi deploy, không cần real AWS |
 | WAF scope REGIONAL (không CLOUDFRONT) | Gắn vào ALB — nếu sau thêm CloudFront thì tạo thêm WebACL scope CLOUDFRONT ở us-east-1 |
 | infrastructure/outputs/ gitignored | ARN/ID thật không commit lên git, chỉ lưu local |
+| pg.Pool ssl: rejectUnauthorized:false | RDS force_ssl=1 bắt buộc encryption, chấp nhận cert AWS tự ký không cần CA bundle riêng (đủ cho scope demo) |

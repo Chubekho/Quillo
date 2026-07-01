@@ -9,7 +9,12 @@ function getPrisma(): PrismaClient {
   if (_prisma) return _prisma;
 
   // DATABASE_URL guaranteed set by loadSecrets() before first use
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false
+    }
+  });
   const adapter = new PrismaPg(pool);
 
   _prisma = new PrismaClient({

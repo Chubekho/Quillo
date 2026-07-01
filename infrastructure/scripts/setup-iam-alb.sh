@@ -81,7 +81,9 @@ cat <<EOF > /tmp/inline-policy.json
       "Action": [
         "logs:CreateLogGroup",
         "logs:CreateLogStream",
-        "logs:PutLogEvents"
+        "logs:PutLogEvents",
+        "logs:DescribeLogStreams",
+        "logs:PutRetentionPolicy"
       ],
       "Resource": "arn:aws:logs:$REGION:*:log-group:/quillo/api:*"
     },
