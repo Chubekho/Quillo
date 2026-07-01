@@ -193,11 +193,12 @@
 **[Infra/Deploy — Day 13]**
 - IAM quillo-ec2-role: thêm logs:DescribeLogStreams + logs:PutRetentionPolicy (fix AccessDenied winston-cloudwatch)
 - database.ts: thêm ssl: { rejectUnauthorized: false } vào pg.Pool
-  - Root cause: RDS force_ssl=1 reject unencrypted connection, pg.Pool không truyền ssl config
+- Root cause: RDS force_ssl=1 reject unencrypted connection, pg.Pool không truyền ssl config
 - Rebuild + push image → Instance Refresh → ASG 2/2 target healthy
 - Verify E2E: curl ALB /api/v1/health → 200 {"status":"ok","postgres":"up","api":"up"}
 - prisma migrate deploy lên RDS (Task 13.3) qua SSM port-forwarding (local port 5433 -> rds port 5432)
 - Deploy Lambda worker (Task 13.4): setup-lambda.sh + SQS event source mapping thành công, verify test job OK.
+- IAM role riêng quillo-lambda-role, Security Group riêng quillo-lambda-sg (không dùng chung EC2)
 
 ---
 
@@ -217,7 +218,6 @@
 - DLQ RedrivePolicy trên LocalStack không verify được (subdomain URL mismatch) — không ảnh hưởng dev workflow
 - WAF associate với ALB chờ Day 12-13
 - CloudWatch alarms + SNS chờ chạy setup-cloudwatch.sh trên real AWS
-
 - ALLOWED_ORIGINS trong Launch Template vẫn là placeholder CloudFront → cần update sau task CloudFront
 
 ---

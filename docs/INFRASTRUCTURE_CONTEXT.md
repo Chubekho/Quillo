@@ -8,17 +8,18 @@ AWS services list + local dev setup. Đọc QUILLO_PROJECT_CONTEXT.md trước.
 
 | Service | Mục đích | Notes |
 |---------|----------|-------|
-| EC2 (private subnet) | Express API server | t3.small minimum |
+| EC2 (ASG, private subnet) | Express API server | Đứng sau ALB internet-facing, t3.small minimum |
+| ALB | Public entry point | health check /api/v1/health |
+| Auto Scaling Group | Quản lý EC2 instances | min=2 max=4, CPU target tracking 60% |
 | Lambda | SQS worker (worker.ts) | Node 20 runtime |
 | Gemini API (external) | AI content generation | Gemini 2.5 Flash via AI_PROVIDER flag |
 | SQS + DLQ | Async generation queue | Standard queue (không cần FIFO) |
 | RDS PostgreSQL Multi-AZ | Database | db.t3.micro dev, t3.small prod |
 | S3 (2 buckets) | quillo-exports, quillo-assets | |
 | CloudFront | CDN cho React SPA | |
-| API Gateway | Entry point + throttling | |
 | WAF | SQLi/XSS/Bot protection | |
 | Cognito | Auth (prod) | Hiện dùng JWT tự quản |
-| ElastiCache Redis | Cache persona + rate limit | cache.t3.micro |
+| ElastiCache Redis | Cache persona + rate limit | cache.t3.micro, SG quillo-redis-sg |
 | Secrets Manager | DB creds, API keys | |
 | CloudWatch | Logs + metrics + alarms | |
 
@@ -67,29 +68,39 @@ aws --endpoint-url http://localhost:4566 secretsmanager get-secret-value \
 ---
 
 ## Network Architecture
-Internet → CloudFront → WAF → API Gateway → EC2 (private subnet)
+
+Internet → ALB (public subnet) → ASG/EC2 (private subnet)
 ↓
 SQS Queue
 ↓
-Lambda Worker
+Lambda Worker (VPC, private subnet)
 ↓
-Amazon Bedrock
+Gemini API (external, qua NAT Gateway)
+
+- CloudFront: CHƯA setup (Task 13.5, pending)
+- WAF: WebACL tạo xong (REGIONAL), CHƯA associate với ALB (Task 13.6, pending)
+
 VPC: 1 Region, 2 AZ  
-Public subnet: ALB (nếu mở rộng)  
-Private subnet: EC2, RDS
+Public subnet: ALB, NAT Gateway  
+Private subnet: EC2 (ASG), RDS, ElastiCache Redis, Lambda
 
 ---
 
 ## Deployment Scripts (Day 12-13)
 
-Thứ tự chạy khi deploy production:
-1. bash infrastructure/scripts/setup-cloudwatch.sh  (cần ALARM_EMAIL env var)
-2. bash infrastructure/scripts/setup-waf.sh
-3. Tạo EC2 + ALB → lấy ALB ARN
-4. aws wafv2 associate-web-acl \
-     --web-acl-arn $(cat infrastructure/outputs/waf-webacl-arn.txt) \
-     --resource-arn <ALB_ARN> \
-     --region ap-southeast-1
+Thứ tự chạy provision production thực tế (Task 12.3 → 13.4):
+1. **[DONE]** `bash infrastructure/scripts/setup-vpc.sh`
+2. **[DONE]** `bash infrastructure/scripts/setup-rds.sh`
+3. **[DONE]** `bash infrastructure/scripts/setup-s3-buckets.sh` và `setup-prod-secrets.sh`
+4. **[DONE]** `bash infrastructure/scripts/setup-ecr.sh` và `push-image.sh`
+5. **[DONE]** `bash infrastructure/scripts/setup-iam-alb.sh`
+6. **[DONE]** `bash infrastructure/scripts/setup-redis.sh`
+7. **[DONE]** `bash infrastructure/scripts/setup-asg.sh`
+8. **[DONE]** `bash infrastructure/scripts/setup-lambda.sh`
+9. **[DONE]** `npx prisma migrate deploy` (qua SSM port-forwarding lên RDS)
+10. **[PENDING]** `bash infrastructure/scripts/setup-cloudwatch.sh` (cần confirm SNS email)
+11. **[PENDING]** WAF: associate WebACL (đã tạo sẵn) với ALB
+12. **[PENDING]** CloudFront: tạo distribution và S3 hosting
 
 ---
 
@@ -97,6 +108,16 @@ Thứ tự chạy khi deploy production:
 infrastructure/scripts/
 ├── setup-local.sh        ← One-shot first-time setup: Docker + LocalStack init + npm + migrate + seed
 ├── localstack-init.sh    ← Re-run sau mỗi LocalStack restart (source export-env.sh trước)
+├── setup-vpc.sh          ← Real AWS: thiết lập VPC, Subnets, Route Tables, IGW, NAT GW và SGs
+├── setup-rds.sh          ← Real AWS: tạo Subnet Group và RDS PostgreSQL Multi-AZ
+├── setup-s3-buckets.sh   ← Real AWS: tạo S3 buckets (exports, assets) với block public access/CORS
+├── setup-prod-secrets.sh ← Real AWS: tạo SQS, DLQ và Secrets Manager lưu app-secrets-prod
+├── setup-ecr.sh          ← Real AWS: tạo ECR repository quillo-api với scanOnPush
+├── push-image.sh         ← Real AWS: build Docker image (linux/amd64) và push lên ECR
+├── setup-iam-alb.sh      ← Real AWS: thiết lập IAM role, ALB public và Target Group HTTP
+├── setup-asg.sh          ← Real AWS: thiết lập Launch Template và Auto Scaling Group
+├── setup-redis.sh        ← Real AWS: provision ElastiCache Redis trong Private Subnet
+├── setup-lambda.sh       ← Real AWS: deploy Lambda worker + SQS Event Source Mapping
 ├── setup-cloudwatch.sh   ← Real AWS: tạo Log Groups, SNS Topic, Metric Filters, Alarms
 ├── setup-waf.sh          ← Real AWS: tạo WAF WebACL (REGIONAL) với SQLi/XSS/RateLimit rules
 ├── build-lambda.sh       ← Bundle worker.ts → dist-lambda/index.js → worker-lambda.zip (esbuild bundle-all)
@@ -107,12 +128,9 @@ export-env.sh ← Local only, gitignored. Load JWT_SECRET/DATABASE_URL/GEMINI_AP
 ---
 
 ## Chưa implement (cần khi deploy Day 12-13)
-- CDK/Terraform IaC thay thế AWS CLI scripts (optional)
-- CI/CD pipeline (GitHub Actions)
-- Lambda deploy: worker-lambda.zip đã sẵn, chạy aws lambda update-function-code
-- ECR repository + push Docker image quillo-api (hoặc deploy EC2 trực tiếp từ git pull)
 - CloudFront distribution tạo mới, S3 bucket quillo-frontend với static website hosting
-- RDS backup policy
 - WAF associate với ALB (sau khi tạo ALB xong)
-- CloudWatch alarms + SNS subscription confirm (chạy setup-cloudwatch.sh + confirm email)
-- Secrets Manager production secret (giá trị production thật — hiện LocalStack only)
+- CloudWatch alarms + SNS subscription confirm (nếu chưa confirm email)
+- CI/CD pipeline (GitHub Actions)
+- CDK/Terraform IaC thay thế AWS CLI scripts (optional)
+- RDS backup policy

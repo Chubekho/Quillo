@@ -144,3 +144,17 @@ Ghi chú: Event Source Mapping nhận message SQS và trigger Lambda thành côn
 - IAM role riêng `quillo-lambda-role` (không dùng chung quillo-ec2-role — least privilege theo service)
   - Security Group riêng `quillo-lambda-sg`, đã whitelist inbound vào rds-sg + quillo-redis-sg
   - logger.ts: bypass CloudWatchTransport khi chạy trong Lambda (AWS_LAMBDA_FUNCTION_NAME) — Lambda tự forward stdout lên CloudWatch native
+
+### [Docs Day 13 - 2026-07-01 18:52] Cập nhật INFRASTRUCTURE_CONTEXT.md khớp thực tế deploy
+Làm gì: Cập nhật tài liệu hạ tầng để phản ánh đúng kiến trúc thực tế Day 12-13 (chuyển sang dùng ALB + ASG), cập nhật danh sách script mới provision AWS, và điều chỉnh sơ đồ luồng Network Architecture.
+Files thay đổi:
+docs/INFRASTRUCTURE_CONTEXT.md — cập nhật AWS Services, Network Architecture, Scripts, Chưa implement cho khớp trạng thái Day 12-13
+Kết quả: DONE
+Ghi chú: Giữ lại "RDS backup policy" trong phần chưa implement do không thấy thông tin cấu hình backup tự động trong log. Cần human verify nếu cần thiết.
+
+### [Docs Day 13 - 2026-07-01 18:59] Fix INFRASTRUCTURE_CONTEXT.md section "Deployment Scripts"
+Làm gì: Thay thế nội dung cũ (Day 11) của mục Deployment Scripts bằng list các bước provision chạy thực tế tuần tự, đánh dấu rõ bước nào DONE, bước nào PENDING.
+Files thay đổi:
+docs/INFRASTRUCTURE_CONTEXT.md — Cập nhật mục Deployment Scripts
+Kết quả: DONE
+Ghi chú: Đã bám sát hoàn toàn chuỗi task 12.3 đến 13.4 để list trình tự chạy.
