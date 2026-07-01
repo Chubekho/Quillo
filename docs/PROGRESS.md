@@ -196,18 +196,18 @@
   - Root cause: RDS force_ssl=1 reject unencrypted connection, pg.Pool không truyền ssl config
 - Rebuild + push image → Instance Refresh → ASG 2/2 target healthy
 - Verify E2E: curl ALB /api/v1/health → 200 {"status":"ok","postgres":"up","api":"up"}
+- prisma migrate deploy lên RDS (Task 13.3) qua SSM port-forwarding (local port 5433 -> rds port 5432)
+- Deploy Lambda worker (Task 13.4): setup-lambda.sh + SQS event source mapping thành công, verify test job OK.
 
 ---
 
 
 ## Tiếp theo 🟡
 
-1. prisma migrate deploy lên RDS (Task 13.3)
-2. Lambda deploy: setup-lambda.sh + SQS event source mapping (Task 13.4)
-3. CloudFront + frontend deploy — S3 quillo-frontend-prod (Task 13.5)
-4. WAF associate với ALB + setup-cloudwatch.sh confirm SNS (Task 13.6)
-5. Domain DNS: api.domain → ALB, app.domain → CloudFront
-6. Smoke test full flow production
+1. CloudFront + frontend deploy — S3 quillo-frontend-prod (Task 13.5)
+2. WAF associate với ALB + setup-cloudwatch.sh confirm SNS (Task 13.6)
+3. Domain DNS: api.domain → ALB, app.domain → CloudFront
+4. Smoke test full flow production
 
 ---
 
@@ -259,3 +259,5 @@
 | WAF scope REGIONAL (không CLOUDFRONT) | Gắn vào ALB — nếu sau thêm CloudFront thì tạo thêm WebACL scope CLOUDFRONT ở us-east-1 |
 | infrastructure/outputs/ gitignored | ARN/ID thật không commit lên git, chỉ lưu local |
 | pg.Pool ssl: rejectUnauthorized:false | RDS force_ssl=1 bắt buộc encryption, chấp nhận cert AWS tự ký không cần CA bundle riêng (đủ cho scope demo) |
+| Lambda role/SG riêng biệt, không dùng chung EC2 | Least privilege theo service, giảm blast radius nếu 1 role bị compromise |
+| winston-cloudwatch bypass trong Lambda | Lambda runtime tự forward stdout → CloudWatch Logs, transport riêng dư thừa + gây lỗi missing aws-sdk v2 |

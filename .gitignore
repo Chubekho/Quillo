@@ -46,5 +46,11 @@ coverage/
 # Docker
 .docker/
 
-# Infrastructure outputs
-infrastructure/outputs/*.txt
+# Local test artifacts
+sessionmanager-bundle/
+sessionmanager-bundle.zip
+backend/msg.json
+
+# Build outputs
+backend/dist-lambda/
+infrastructure/outputs/

@@ -18,7 +18,7 @@ export const logger = winston.createLogger({
   // Production: thêm transport gửi lên CloudWatch hoặc file
 });
 
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production' && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
   const serviceName = process.env.SERVICE_NAME ?? 'api'; // 'api' hoặc 'worker'
   logger.add(new CloudWatchTransport({
     logGroupName: `/quillo/${serviceName}`,

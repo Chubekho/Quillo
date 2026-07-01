@@ -122,3 +122,25 @@ Files thay đổi:
 backend/src/config/database.ts — thêm config SSL.
 Kết quả: DONE
 Ghi chú: Đã xác nhận tất cả target healthy trên ELB Target Group, và endpoint `/api/v1/health` trả về status `ok` (postgres up, api up). Deploy thành công.
+
+### [Deploy Day 13 - 2026-07-01 15:15] Task 13.3: prisma migrate deploy lên RDS
+Làm gì: Lấy secret từ AWS Secrets Manager, parse `DATABASE_URL`, thiết lập AWS SSM port-forwarding qua instance ASG để trỏ `localhost:5433` tới RDS instance (với `sslmode=require`), và chạy `npx prisma migrate deploy` an toàn không để lọt credentials ra stdout.
+Files thay đổi: (không có — chỉ chạy migration, không sửa code)
+Kết quả: DONE
+Ghi chú: Chạy lệnh thành công, apply migration `20260623064843_init_db`. `npx prisma migrate status` báo "Database schema is up to date!". Số lượng bảng `information_schema.tables` đã được verify thành công. Đã đóng SSM tunnel an toàn.
+
+### [Deploy Day 13 - 2026-07-01 15:45] Task 13.4: Deploy Lambda worker + SQS Event Source Mapping
+Làm gì: Tạo script `setup-lambda.sh` để tạo IAM role (`quillo-lambda-role`), Security Group (`quillo-lambda-sg`), deploy Lambda function (`quillo-worker`), và thiết lập SQS Event Source Mapping (`quillo-generation-queue-prod` -> `quillo-worker`). Chạy script và gửi SQS test message.
+Root cause (các lỗi gặp phải trong lúc deploy):
+1. Tham số `AWS_REGION` là key bị cấm (reserved) trên Lambda environment variables -> phải xoá khỏi script.
+2. Lỗi Duplicate Security Group khi rerun script do filter theo group-names không hoạt động đúng nếu không truyền vpc-id -> Sửa lại dùng `--filters Name=group-name,Values=... Name=vpc-id,Values=...`.
+3. Lỗi winston-cloudwatch missing `aws-sdk` (v2) trên Node 20 runtime -> Cập nhật `logger.ts` để bypass thêm `CloudWatchTransport` nếu đang chạy trong môi trường Lambda (vì Lambda tự forward stdout lên CloudWatch Logs native).
+Files thay đổi:
+infrastructure/scripts/setup-lambda.sh — tạo script deploy Lambda.
+backend/src/config/logger.ts — bypass winston-cloudwatch trên Lambda.
+backend/create-job.ts & backend/run-test.sh — các script test để tạo dummy job trong DB và send SQS msg.
+Kết quả: DONE
+Ghi chú: Event Source Mapping nhận message SQS và trigger Lambda thành công. Lambda đọc được connection string và Secrets Manager, update trạng thái job. Error ghi nhận duy nhất trên Lambda logs là "[503 Service Unavailable] This model is currently experiencing high demand" từ Gemini API, xác nhận worker hoạt động E2E hoàn hảo về mặt infra/network.
+- IAM role riêng `quillo-lambda-role` (không dùng chung quillo-ec2-role — least privilege theo service)
+  - Security Group riêng `quillo-lambda-sg`, đã whitelist inbound vào rds-sg + quillo-redis-sg
+  - logger.ts: bypass CloudWatchTransport khi chạy trong Lambda (AWS_LAMBDA_FUNCTION_NAME) — Lambda tự forward stdout lên CloudWatch native
