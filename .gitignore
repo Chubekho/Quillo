@@ -14,6 +14,7 @@ build/
 .env.local
 .env.production
 .env.*.local
+export-env.sh
 
 # Logs
 *.log
@@ -47,4 +48,3 @@ coverage/
 
 # Infrastructure outputs
 infrastructure/outputs/*.txt
-export-env.sh

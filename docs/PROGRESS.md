@@ -7,9 +7,9 @@
 
 ## Trạng thái hiện tại
 
-**Sprint:** Tuần 2 / 2 | **Ngày:** Day 12 (in progress)
+**Sprint:** Tuần 2 / 2 | **Ngày:** Day 12-13 (in progress)
 **Branch:** main  
-**Last updated:** 2026-06-29
+**Last updated:** 2026-07-01
 
 ---
 
@@ -173,19 +173,38 @@
 - frontend/.env.production.example, infrastructure/scripts/deploy-frontend.sh (S3 sync + CF invalidation, bash -n clean)
 - Installed: @aws-sdk/client-cloudwatch-logs (missing dep winston-cloudwatch), @types/aws-lambda, esbuild (devDep)
 
+**[Infra/Deploy — Day 12-13]**
+- VPC: 2 AZ, public/private subnet, IGW, NAT Gateway, route tables, 3 SGs (alb/ec2/rds)
+- RDS PostgreSQL 16 Multi-AZ (db.t3.micro, quillo-prod-db) — available ✅
+- SQS prod: quillo-generation-queue-prod + DLQ, RedrivePolicy, VisibilityTimeout 300s
+- S3: quillo-exports-prod (CORS), quillo-assets-prod, quillo-frontend-prod (block public)
+- Secrets Manager: quillo/app-secrets-prod (JWT_SECRET + DATABASE_URL + GEMINI_API_KEY)
+- ECR: repo quillo-api, scanOnPush, lifecycle policy 5 images, push script với --platform linux/amd64
+- IAM: quillo-ec2-role + inline policy (SecretsManager/SQS/S3/CloudWatch/ECR), SSM managed policy
+- ALB: internet-facing, public subnet, HTTP:80 listener → quillo-api-tg (port 3001, health /api/v1/health)
+- ElastiCache Redis 7.x: cache.t3.micro, private subnet, quillo-redis-sg (6379 chỉ từ ec2-sg)
+- ASG: min=2 max=4, Launch Template (Amazon Linux 2023, t3.micro, user-data pull ECR image), ELB health check, CPU target tracking 60%
+
+**[Bug fixes — Day 12-13]**
+- push-image.sh: thêm --platform linux/amd64 (fix arm64 vs amd64 mismatch trên Mac M-series)
+- database.ts: pg.Pool khởi tạo lazy qua Proxy — fix DATABASE_URL=undefined khi module load trước loadSecrets()
+- IAM quillo-ec2-role: thiếu logs:DescribeLogStreams + logs:PutRetentionPolicy (winston-cloudwatch cần) — chưa fix
+
 ---
 
 
-## Tiếp theo 🟡 (Day 12-13)
+## Tiếp theo 🟡
 
-1. Provision AWS resources (human): RDS Multi-AZ → EC2 → ALB → S3 (quillo-frontend + quillo-exports) → CloudFront → SQS prod + DLQ → Secrets Manager prod secret
-2. Chạy setup-cloudwatch.sh + setup-waf.sh trên real AWS → confirm SNS email
-3. Associate WAF WebACL với ALB
-4. Deploy backend: push Docker image lên ECR → EC2 pull + run (hoặc dùng zip deploy trực tiếp)
-5. Deploy Lambda: aws lambda update-function-code --zip-file fileb://infrastructure/outputs/worker-lambda.zip
-6. Deploy frontend: S3_BUCKET=<bucket> CF_DISTRIBUTION_ID=<id> bash infrastructure/scripts/deploy-frontend.sh
-7. prisma migrate deploy lên RDS
-8. Smoke test production endpoints
+1. Fix IAM policy: thêm logs:DescribeLogStreams + logs:PutRetentionPolicy vào quillo-ec2-role
+2. Rebuild + push Docker image (database.ts đã fix)
+3. Trigger instance refresh ASG → verify target health = healthy
+4. Test curl ALB DNS: curl http://quillo-alb-512124280.ap-southeast-1.elb.amazonaws.com/api/v1/health
+5. prisma migrate deploy lên RDS
+6. Lambda deploy: setup-lambda.sh + SQS event source mapping
+7. CloudFront + frontend deploy (S3 quillo-frontend-prod)
+8. WAF associate với ALB + setup-cloudwatch.sh confirm SNS
+9. Domain DNS: api.domain → ALB, app.domain → CloudFront
+10. Smoke test full flow production
 
 ---
 
@@ -195,6 +214,8 @@
 - DLQ RedrivePolicy trên LocalStack không verify được (subdomain URL mismatch) — không ảnh hưởng dev workflow
 - WAF associate với ALB chờ Day 12-13
 - CloudWatch alarms + SNS chờ chạy setup-cloudwatch.sh trên real AWS
+- IAM logs:DescribeLogStreams + logs:PutRetentionPolicy chưa có trong quillo-ec2-role → winston-cloudwatch log AccessDenied (không fatal nhưng cần fix)
+- ALLOWED_ORIGINS trong Launch Template vẫn là placeholder CloudFront → cần update sau task CloudFront
 
 ---
 

@@ -1,0 +1,98 @@
+# AGENT LOG — Week 2 (Part 3) — Infra Provisioning
+
+### [Task day 12.3 - 2026-06-30 15:20] AWS Provisioning Script: VPC + Subnets + Security Groups
+Làm gì: Tạo script AWS CLI `setup-vpc.sh` để thiết lập VPC, Subnets, Route Tables, IGW, NAT GW và SGs.
+
+Files thay đổi:
+docs/AGENT_LOG-week_2_3.md — tạo file log mới cho Phase 3
+docs/GEMINI_INSTRUCTION.md — cập nhật active log
+infrastructure/scripts/setup-vpc.sh — tạo script provision network foundation
+
+Kết quả: DONE
+
+Ghi chú: Script chưa chạy thật, human sẽ chạy và verify trên AWS console.
+
+### [Task day 12.4 - 2026-06-30 15:38] AWS Provisioning Script: RDS PostgreSQL Multi-AZ
+Làm gì: Tạo script AWS CLI `setup-rds.sh` để tạo Subnet Group và khởi tạo RDS PostgreSQL Multi-AZ instance version 16.x.
+
+Files thay đổi:
+infrastructure/scripts/setup-rds.sh — tạo script provision RDS
+
+Kết quả: DONE
+
+Ghi chú: Script chưa chạy thật, human sẽ chạy. Password master và DATABASE_URL được cấu hình chỉ lưu vào file, không log ra terminal (stdout) để đảm bảo security CI.
+
+### [Task day 12.5 - 2026-06-30 16:07] AWS Provisioning Script: SQS prod + S3 buckets + Secrets Manager
+Làm gì: Tạo 2 script AWS CLI để thiết lập hạ tầng bổ sung: `setup-s3-buckets.sh` tạo 3 S3 buckets với block public access/CORS, tự động thêm random suffix nếu bucket name bị trùng; `setup-prod-secrets.sh` tạo SQS queue & DLQ kèm RedrivePolicy và cấu hình Secrets Manager lưu trữ `app-secrets-prod` bundle.
+
+Files thay đổi:
+infrastructure/scripts/setup-s3-buckets.sh — tạo script provision S3 buckets
+infrastructure/scripts/setup-prod-secrets.sh — tạo script provision SQS và Secrets Manager
+
+Kết quả: DONE
+
+Ghi chú: Script chưa chạy thật. Các giá trị bí mật như JWT_SECRET, DB password và API Key được xử lý an toàn (pass qua biến/file, ghi vào secret, không in ra stdout).
+
+### [Task day 12.6a - 2026-06-30 16:20] ECR Repository + Push Script
+Làm gì: Tạo script AWS CLI `setup-ecr.sh` để thiết lập ECR repository `quillo-api` với tính năng tự động scan image (scanOnPush) và lifecycle policy giữ 5 image gần nhất; kèm script `push-image.sh` để build image từ `backend/Dockerfile` và push lên repository, tag bằng `latest` và timestamp version phục vụ rollback.
+
+Files thay đổi:
+infrastructure/scripts/setup-ecr.sh — tạo script thiết lập ECR repository
+infrastructure/scripts/push-image.sh — tạo script docker build/tag/push
+
+Kết quả: DONE
+
+Ghi chú: Script chưa chạy thật. Quá trình lấy registry URL tự động qua output của file `ecr-outputs.txt`.
+
+### [Task day 12.6b - 2026-06-30 16:41] IAM Instance Role + ALB + Target Group
+Làm gì: Tạo script AWS CLI `setup-iam-alb.sh` thiết lập IAM role `quillo-ec2-role` cho EC2 kèm inline policy cấp quyền chặt chẽ theo scope (SQS, S3, Secrets Manager, ECR, CloudWatch Logs). Thiết lập Instance Profile. Khởi tạo Application Load Balancer (ALB) public với Target Group HTTP:3001 và HTTP:80 Listener (có note HTTPS/SSL cho cấu hình sau).
+
+Files thay đổi:
+infrastructure/scripts/setup-iam-alb.sh — tạo script cấp quyền IAM & khởi tạo ALB, Target Group
+
+Kết quả: DONE
+
+Ghi chú: Script chưa chạy thật. Policy bám sát principle of least privilege, mapping qua các file ARN outputs. Đã verify endpoint `/api/v1/health` để cấu hình health check.
+
+### [Task day 12.6c - 2026-06-30 16:58] Launch Template + Auto Scaling Group
+Làm gì: Tạo script AWS CLI `setup-asg.sh` thiết lập Launch Template với User-Data tự động pull và chạy container, cùng Auto Scaling Group để scale 2-4 instances trong private subnet. Dùng kết quả ELB health check để auto-healing và CPU target tracking 60% để tự scale.
+
+Files thay đổi:
+infrastructure/scripts/setup-asg.sh — tạo script Launch Template và ASG
+
+Kết quả: DONE
+
+Ghi chú: Cấu trúc user data KHÔNG chứa plaintext secrets. Đã verified. Script chưa được chạy thật.
+
+### [Fix Day 12.6c - 2026-06-30 17:36] Docker build sai kiến trúc (arm64 vs amd64)
+Làm gì: Cập nhật `push-image.sh` để ép Docker build container qua `buildx` sử dụng kiến trúc `linux/amd64`. Root cause do build trên Mac M-series (arm64) nên bị lỗi "no matching manifest for linux/amd64" khi ASG EC2 instance (kiến trúc x86_64/amd64) pull image, gây ra crash loop. Sửa thành `docker buildx build --platform linux/amd64 --load`.
+
+Files thay đổi:
+infrastructure/scripts/push-image.sh — sửa docker command để cross-compile
+
+Kết quả: DONE
+
+Ghi chú: `bash -n` báo syntax chuẩn, chưa build thật.
+
+### [Task day 12.6d - 2026-06-30 18:43] ElastiCache Redis + Cập nhật Launch Template
+Làm gì: Provision ElastiCache Redis 7.x (single-node, cache.t3.micro) trong Private Subnet và thêm Security Group `quillo-redis-sg` chỉ cho phép Inbound 6379 từ EC2 SG. Sửa đổi User Data của `setup-asg.sh` để truyền biến `REDIS_URL` vào container Docker. Thêm logic gọi Instance Refresh lên ASG để tự động thay thế instance đang chạy bằng version Launch Template mới khi chạy lại script.
+
+Root cause: ElastiCache Redis bị bỏ sót khỏi task breakdown ban đầu, khiến container khởi động thất bại do thiếu service Redis (crash loop).
+
+Files thay đổi:
+infrastructure/scripts/setup-redis.sh — tạo script mới provision Redis
+infrastructure/scripts/setup-asg.sh — cập nhật để nhúng `REDIS_URL` và gọi Instance Refresh
+
+Kết quả: DONE
+
+Ghi chú: Script chưa chạy thật. Các lệnh đều idempotent, và password/auth được bypass vì Redis chạy trong local private subnet (tradeoff cost-effective dev scope).
+
+### [Fix Day 12 - 2026-07-01 10:09] Fix database connection initialization
+Làm gì: Sửa lỗi `pg.Pool` khởi tạo trước khi `loadSecrets()` thiết lập biến môi trường `DATABASE_URL`. Sử dụng `Proxy` để hoãn việc khởi tạo `Pool` và `PrismaClient` cho đến lần truy cập đầu tiên.
+Root cause: Module `database.ts` đọc `process.env.DATABASE_URL` ngay lúc nó được import (lúc này chưa có secret từ AWS), dẫn đến Pool kết nối mặc định vào localhost. Hàm `$connect()` của Prisma trên adapter pg là no-op nên không crash ngay từ đầu để phát hiện lỗi sai host.
+Files thay đổi:
+backend/src/config/database.ts — Export prisma qua Proxy thay vì biến thông thường.
+
+Kết quả: DONE
+
+Ghi chú: Việc dùng Proxy giữ nguyên API hiện tại (như object PrismaClient bình thường) nên không cần sửa import ở bất kỳ service nào. Đã verify bằng `npx tsc --noEmit` và dev local. Human sẽ tiến hành build và push image lên ECR sau.
