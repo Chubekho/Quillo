@@ -23,16 +23,17 @@ if [ -z "${S3_BUCKET:-}" ]; then
   exit 1
 fi
 
-if [ -z "${CF_DISTRIBUTION_ID:-}" ]; then
-  echo "ERROR: Environment variable CF_DISTRIBUTION_ID is required but not set." >&2
-  exit 1
+if [ -n "${CF_DISTRIBUTION_ID:-}" ]; then
+  echo "  CloudFront Dist ID : ${CF_DISTRIBUTION_ID}"
+else
+  echo "  CloudFront Dist ID : (not set, skipping invalidation)"
 fi
 
 # Set default AWS region if not provided in environment
 export AWS_REGION="${AWS_REGION:-ap-southeast-1}"
 
 echo "  S3 Bucket          : s3://${S3_BUCKET}"
-echo "  CloudFront Dist ID : ${CF_DISTRIBUTION_ID}"
+# CF_DISTRIBUTION_ID handled above
 echo "  AWS Region         : ${AWS_REGION}"
 echo "  Validation PASSED."
 echo ""
@@ -55,13 +56,17 @@ echo "  S3 sync complete."
 echo ""
 
 # ── Step 3: Invalidate CloudFront cache ────────────────────────
-echo "[3/3] Creating CloudFront invalidation for distribution ${CF_DISTRIBUTION_ID} ..."
+if [ -n "${CF_DISTRIBUTION_ID:-}" ]; then
+  echo "[3/3] Creating CloudFront invalidation for distribution ${CF_DISTRIBUTION_ID} ..."
 
-aws cloudfront create-invalidation \
-  --distribution-id "${CF_DISTRIBUTION_ID}" \
-  --paths "/*" \
-  --region "${AWS_REGION}"
+  aws cloudfront create-invalidation \
+    --distribution-id "${CF_DISTRIBUTION_ID}" \
+    --paths "/*" \
+    --region "${AWS_REGION}"
 
-echo "  CloudFront invalidation triggered successfully."
+  echo "  CloudFront invalidation triggered successfully."
+else
+  echo "[3/3] Skipping CloudFront invalidation (CF_DISTRIBUTION_ID not set)."
+fi
 echo ""
 echo "=== DEPLOYMENT COMPLETE ==="
