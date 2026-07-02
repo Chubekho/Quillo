@@ -2,112 +2,96 @@
 set -e
 
 REGION=${AWS_REGION:-ap-southeast-1}
-ALARM_EMAIL=${ALARM_EMAIL:-""}  # bắt buộc set trước khi chạy
+EMAIL="khuongduyle.it@gmail.com"
+WAF_WEBACL_ARN="arn:aws:wafv2:ap-southeast-1:562395967967:regional/webacl/quillo-waf/ce47fef9-7a8b-4637-bc05-0442cdc3e2e6"
 
-# Guard
-if [ -z "$ALARM_EMAIL" ]; then
-  echo "ERROR: ALARM_EMAIL phải được set"
-  echo "Usage: ALARM_EMAIL=you@example.com bash setup-cloudwatch.sh"
-  exit 1
-fi
+echo "Creating Log Groups..."
+aws logs create-log-group --log-group-name /quillo/api --region $REGION || true
+aws logs create-log-group --log-group-name /quillo/worker --region $REGION || true
+aws logs create-log-group --log-group-name /aws/waf/logs --region $REGION || true
 
-echo "=== Quillo CloudWatch Setup ==="
+echo "Creating SNS Topic..."
+TOPIC_ARN=$(aws sns create-topic --name quillo-prod-alerts --region $REGION --query 'TopicArn' --output text)
+echo $TOPIC_ARN > infrastructure/outputs/sns-alert-topic.txt
+echo "Topic ARN: $TOPIC_ARN"
 
-# 1. Log Groups
-echo "Creating log groups..."
-aws logs create-log-group --log-group-name /quillo/api --region $REGION 2>/dev/null || true
-aws logs create-log-group --log-group-name /quillo/worker --region $REGION 2>/dev/null || true
-aws logs put-retention-policy --log-group-name /quillo/api --retention-in-days 30 --region $REGION
-aws logs put-retention-policy --log-group-name /quillo/worker --retention-in-days 30 --region $REGION
-echo "  Log groups: OK"
+echo "Subscribing email..."
+aws sns subscribe --topic-arn $TOPIC_ARN --protocol email --notification-endpoint $EMAIL --region $REGION
 
-# 2. SNS Topic cho alarm notification
-echo "Creating SNS topic..."
-SNS_TOPIC_ARN=$(aws sns create-topic \
-  --name quillo-alerts \
-  --region $REGION \
-  --query 'TopicArn' --output text)
-aws sns subscribe \
-  --topic-arn $SNS_TOPIC_ARN \
-  --protocol email \
-  --notification-endpoint $ALARM_EMAIL \
+echo "Creating Metric Filters..."
+# WAF Blocked Requests
+FILTER_PATTERN="{ ($.action = \"BLOCK\") && ($.webaclId = \"$WAF_WEBACL_ARN\") }"
+aws logs put-metric-filter \
+  --log-group-name /aws/waf/logs \
+  --filter-name WAFBlockedRequests \
+  --filter-pattern "$FILTER_PATTERN" \
+  --metric-transformations \
+      metricName=WAFBlockedRequests,metricNamespace=Quillo,metricValue=1 \
   --region $REGION
-echo "  SNS topic: $SNS_TOPIC_ARN"
-echo "  ⚠️  Check email $ALARM_EMAIL để confirm SNS subscription!"
 
-# 3. Metric Filter — đếm ERROR logs từ /quillo/api
-echo "Creating metric filters..."
+# API Error Rate
 aws logs put-metric-filter \
   --log-group-name /quillo/api \
-  --filter-name QuilloAPIErrorCount \
-  --filter-pattern '{ $.level = "error" }' \
+  --filter-name ApiErrorRate \
+  --filter-pattern '{ $.logLevel = "ERROR" }' \
   --metric-transformations \
-    metricName=APIErrorCount,metricNamespace=Quillo,metricValue=1,defaultValue=0 \
+      metricName=ApiErrorCount,metricNamespace=Quillo,metricValue=1 \
   --region $REGION
 
+# Worker Error Rate
 aws logs put-metric-filter \
   --log-group-name /quillo/worker \
-  --filter-name QuilloWorkerErrorCount \
-  --filter-pattern '{ $.level = "error" }' \
+  --filter-name WorkerErrorRate \
+  --filter-pattern '{ $.logLevel = "ERROR" }' \
   --metric-transformations \
-    metricName=WorkerErrorCount,metricNamespace=Quillo,metricValue=1,defaultValue=0 \
+      metricName=WorkerErrorCount,metricNamespace=Quillo,metricValue=1 \
   --region $REGION
-echo "  Metric filters: OK"
 
-# 4. Alarms
-echo "Creating alarms..."
+echo "Creating CloudWatch Alarms..."
 
-# Alarm 1: API error rate
 aws cloudwatch put-metric-alarm \
-  --alarm-name quillo-api-error-rate \
-  --alarm-description "Quillo API: > 5 errors trong 5 phút" \
-  --metric-name APIErrorCount \
+  --alarm-name quillo_api_error_rate_high \
+  --alarm-description "API Error rate is high" \
+  --metric-name ApiErrorCount \
   --namespace Quillo \
   --statistic Sum \
   --period 300 \
-  --threshold 5 \
-  --comparison-operator GreaterThanThreshold \
   --evaluation-periods 1 \
-  --alarm-actions $SNS_TOPIC_ARN \
-  --ok-actions $SNS_TOPIC_ARN \
+  --threshold 5 \
+  --comparison-operator GreaterThanOrEqualToThreshold \
   --treat-missing-data notBreaching \
+  --alarm-actions $TOPIC_ARN \
+  --ok-actions $TOPIC_ARN \
   --region $REGION
 
-# Alarm 2: Worker error rate  
 aws cloudwatch put-metric-alarm \
-  --alarm-name quillo-worker-error-rate \
-  --alarm-description "Quillo Worker: > 3 errors trong 5 phút" \
+  --alarm-name quillo_worker_error_rate_high \
+  --alarm-description "Worker Error rate is high" \
   --metric-name WorkerErrorCount \
   --namespace Quillo \
   --statistic Sum \
   --period 300 \
-  --threshold 3 \
-  --comparison-operator GreaterThanThreshold \
   --evaluation-periods 1 \
-  --alarm-actions $SNS_TOPIC_ARN \
+  --threshold 5 \
+  --comparison-operator GreaterThanOrEqualToThreshold \
   --treat-missing-data notBreaching \
+  --alarm-actions $TOPIC_ARN \
+  --ok-actions $TOPIC_ARN \
   --region $REGION
 
-# Alarm 3: DLQ depth
 aws cloudwatch put-metric-alarm \
-  --alarm-name quillo-dlq-depth \
-  --alarm-description "Quillo DLQ: có message thất bại cần xử lý" \
-  --metric-name ApproximateNumberOfMessagesVisible \
-  --namespace AWS/SQS \
-  --dimensions Name=QueueName,Value=quillo-generation-dlq \
-  --statistic Maximum \
-  --period 60 \
-  --threshold 0 \
-  --comparison-operator GreaterThanThreshold \
+  --alarm-name quillo_waf_blocked_requests_high \
+  --alarm-description "High number of WAF blocked requests" \
+  --metric-name WAFBlockedRequests \
+  --namespace Quillo \
+  --statistic Sum \
+  --period 3600 \
   --evaluation-periods 1 \
-  --alarm-actions $SNS_TOPIC_ARN \
+  --threshold 500 \
+  --comparison-operator GreaterThanOrEqualToThreshold \
   --treat-missing-data notBreaching \
+  --alarm-actions $TOPIC_ARN \
+  --ok-actions $TOPIC_ARN \
   --region $REGION
 
-echo "  Alarms: OK"
-
-# 5. Lưu SNS ARN ra file để Day 12-13 dùng
-echo $SNS_TOPIC_ARN > infrastructure/outputs/sns-topic-arn.txt
-echo ""
-echo "=== CloudWatch setup DONE ==="
-echo "SNS ARN saved: infrastructure/outputs/sns-topic-arn.txt"
+echo "CloudWatch Setup Complete!"
