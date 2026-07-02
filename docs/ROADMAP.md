@@ -81,14 +81,14 @@
 - [x] AI Provider swap: Bedrock → Gemini 2.5 Flash (provider abstraction: providers/bedrock + providers/gemini + providers/mock, flag AI_PROVIDER)
 
 ### Day 12-13
-- [ ] AWS deploy:
+- [x] AWS deploy:
   - EC2 (private subnet): Express API
   - Lambda: worker.ts deployment package
   - RDS PostgreSQL Multi-AZ
   - S3 buckets + CloudFront distribution
   - SQS queues (production)
-- [ ] Run prisma migrate deploy trên RDS
-- [ ] Smoke test production endpoints
+- [x] Run prisma migrate deploy trên RDS
+- [x] Smoke test production endpoints
 
 ### Day 14
 - [ ] CI/CD: GitHub Actions pipeline (lint → test → build → deploy)

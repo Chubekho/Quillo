@@ -16,12 +16,12 @@ AWS services list + local dev setup. Đọc QUILLO_PROJECT_CONTEXT.md trước.
 | SQS + DLQ | Async generation queue | Standard queue (không cần FIFO) |
 | RDS PostgreSQL Multi-AZ | Database | db.t3.micro dev, t3.small prod |
 | S3 (2 buckets) | quillo-exports, quillo-assets | |
-| CloudFront | CDN cho React SPA | |
-| WAF | SQLi/XSS/Bot protection | |
+| CloudFront | CDN cho React SPA | BLOCKED (account chưa verify), dùng Cloudflare |
+| WAF | SQLi/XSS/Bot protection | Associated với ALB (Task 13.6) |
 | Cognito | Auth (prod) | Hiện dùng JWT tự quản |
 | ElastiCache Redis | Cache persona + rate limit | cache.t3.micro, SG quillo-redis-sg |
 | Secrets Manager | DB creds, API keys | |
-| CloudWatch | Logs + metrics + alarms | |
+| CloudWatch | Logs + metrics + alarms | Alarms + SNS live (quillo-prod-alerts) |
 
 ---
 
@@ -77,8 +77,10 @@ Lambda Worker (VPC, private subnet)
 ↓
 Gemini API (external, qua NAT Gateway)
 
-- CloudFront: CHƯA setup (Task 13.5, pending)
-- WAF: WebACL tạo xong (REGIONAL), CHƯA associate với ALB (Task 13.6, pending)
+- CloudFront: BLOCKED (account chưa verify), thay bằng Cloudflare proxy (free)
+  - Frontend: quillo.khuongle.site
+  - Backend: quillo-api.khuongle.site (dùng subdomain 1 cấp thay vì api.quillo để tương thích Cloudflare Universal SSL free)
+- WAF: WebACL "quillo-waf" (REGIONAL) associated với ALB (Task 13.6, DONE)
 
 VPC: 1 Region, 2 AZ  
 Public subnet: ALB, NAT Gateway  
@@ -98,9 +100,9 @@ Thứ tự chạy provision production thực tế (Task 12.3 → 13.4):
 7. **[DONE]** `bash infrastructure/scripts/setup-asg.sh`
 8. **[DONE]** `bash infrastructure/scripts/setup-lambda.sh`
 9. **[DONE]** `npx prisma migrate deploy` (qua SSM port-forwarding lên RDS)
-10. **[PENDING]** `bash infrastructure/scripts/setup-cloudwatch.sh` (cần confirm SNS email)
-11. **[PENDING]** WAF: associate WebACL (đã tạo sẵn) với ALB
-12. **[PENDING]** CloudFront: tạo distribution và S3 hosting
+10. **[DONE]** `bash infrastructure/scripts/setup-cloudwatch.sh` (cần confirm SNS email)
+11. **[DONE]** WAF: associate WebACL (đã tạo sẵn) với ALB
+12. **[BLOCKED]** CloudFront: account chưa verify — xem Known Issues
 
 ---
 
@@ -128,9 +130,7 @@ export-env.sh ← Local only, gitignored. Load JWT_SECRET/DATABASE_URL/GEMINI_AP
 ---
 
 ## Chưa implement (cần khi deploy Day 12-13)
-- CloudFront distribution tạo mới, S3 bucket quillo-frontend với static website hosting
-- WAF associate với ALB (sau khi tạo ALB xong)
-- CloudWatch alarms + SNS subscription confirm (nếu chưa confirm email)
+- CloudFront distribution (BLOCKED — account chưa verify AWS Support). S3 static website hosting + Cloudflare proxy đã thay thế tạm thời.
 - CI/CD pipeline (GitHub Actions)
 - CDK/Terraform IaC thay thế AWS CLI scripts (optional)
 - RDS backup policy

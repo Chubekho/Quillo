@@ -7,15 +7,16 @@
 
 ## Trạng thái hiện tại
 
-**Sprint:** Tuần 2 / 2 | **Ngày:** Day 13 (in progress)
+**Sprint:** Tuần 2 / 2 | **Ngày:** Day 13 (hoàn thành) → chuyển Day 14
 **Branch:** main  
-**Last updated:** 2026-07-01
+**Last updated:** 2026-07-02
 
 ---
 
 ## Đã hoàn thành ✅
 
 **[Backend — Session 1-2]**
+
 - Monorepo scaffold + Docker Compose (PostgreSQL + Redis + LocalStack)
 - Prisma schema 11 bảng multi-tenant + seed data
 - Config layer: database, redis, aws (LocalStack-aware), logger
@@ -27,6 +28,7 @@
 - Fix Prisma v7 breaking change: migrate sang prisma.config.ts + adapter-pg
 
 **[Frontend — Session 2]**
+
 - Vite bootstrap: index.html, vite.config.ts, tsconfig, tailwind, postcss
 - App.tsx skeleton routing + main.tsx với QueryClient + Toaster
 - api.ts: Axios client + auto-refresh interceptor + typed API methods
@@ -34,15 +36,18 @@
 - useJobPoller.ts: polling hook mỗi 2.5s, auto-stop khi job xong
 
 **[Infrastructure — Session 1-2]**
+
 - setup-local.sh: one-shot setup script (tạo lại Day 3)
 - Fix LocalStack SQS URL: `http://localhost:4566/000000000000/{queue}`
 - Fix localstack-init.sh: đổi queue-url format từ sqs.region.localhost.localstack.cloud → localhost:4566
 
 **[Docs — Session 2]**
+
 - docs/: 5 context files (Project, Backend, Frontend, Infra, Progress)
 - docs/GEMINI_INSTRUCTION.md + docs/AGENT_LOG.md
 
 **[Backend — Day 3]**
+
 - Campaign CRUD: campaign.service.ts + campaign.controller.ts + routes
   - GET /campaigns, POST /campaigns, GET /campaigns/:id, PATCH /campaigns/:id, DELETE /campaigns/:id
   - Multi-tenant filter đúng, soft delete → status=ARCHIVED
@@ -53,6 +58,7 @@
 - Worker verified: SQS polling active, nhận message, update DB đúng
 
 **[Backend — Day 4]**
+
 - BEDROCK_MOCK=true: mockInvoke() + buildMockContent() trong bedrock.service.ts
   - Persona-aware mock copy theo content type (BLOG_POST/SOCIAL_MEDIA/EMAIL/AD_COPY)
   - sleep(800ms) giả lập latency, đúng shape GenerationResult mà worker.ts parse
@@ -67,6 +73,7 @@
 - E2E verified: generate (mock) → COMPLETED → export PDF/DOCX/HTML → download OK
 
 **[Backend — Day 5]**
+
 - Usage tracking: GET /api/v1/usage trả summary tháng hiện tại
   - getCurrentMonthUsage / getUsageByModel / getUsageSummary
   - Prisma aggregate + groupBy theo calendar month UTC, multi-tenant
@@ -80,7 +87,7 @@
   - PATCH: chỉ OWNER/ADMIN, validate quota >= 0, plan hợp lệ
   - Role check trong controller, MEMBER/VIEWER → 403
 - E2E verified: usage update sau generate, quota reject 429, org update đúng role
-**[Frontend — Day 6]**
+  **[Frontend — Day 6]**
 - ProtectedRoute.tsx: kiểm tra isAuthenticated, hydrate user qua fetchMe() khi có token nhưng chưa có user (reload trang), spinner trong lúc chờ, redirect /login kèm location.state
 - App.tsx: cấu trúc routing đầy đủ — public (/login, /register), protected (/, /content, /personas, /campaigns, /usage) bọc trong ProtectedRoute + AppLayout, catch-all → /
 - Placeholder pages: Dashboard, ContentList, PersonaList, CampaignList, UsagePage (stub, chưa implement nội dung)
@@ -91,6 +98,7 @@
 - Fix: navigate(from, { replace: true }) trong Login — tránh Back button quay lại /login sau khi đã đăng nhập
 
 **[Frontend — Day 7]**
+
 - Spinner.tsx: component dùng chung, prop size optional, Tailwind animation
 - Badge.tsx: component dùng chung, ánh xạ màu cho ContentType (BLOG_POST/SOCIAL_MEDIA/AD_COPY/EMAIL) và ContentStatus/JobStatus
 - api.ts: bổ sung orgApi.get(), orgApi.update(), usageApi.getSummary() theo đúng pattern hiện có
@@ -99,6 +107,7 @@
 - TanStack Query cho mọi fetch: loading (Spinner) + error state đầy đủ
 
 **[Frontend — Day 8]**
+
 - PersonaList.tsx: full implement — hiển thị danh sách brand personas, badge "Mặc định", các tính năng tạo, sửa, xóa (window.confirm), đặt mặc định, xử lý loading/error/empty state đầy đủ
 - Button.tsx / Input.tsx / Select.tsx: các UI component Tailwind tái dùng hỗ trợ variant, isLoading, label, error message, options
 - PersonaForm.tsx: form dùng chung cho create/edit mode với react-hook-form + zod, dùng useFieldArray quản lý mảng chips keywords/avoidWords và exampleOutputs
@@ -108,6 +117,7 @@
 - Bug fix: sửa lỗi PersonaForm không pre-fill keywords, avoidWords và exampleOutputs trong edit mode bằng cách áp dụng useFieldArray và chuẩn hóa defaultValues
 
 **[Frontend — Day 9]**
+
 - ContentEditor.tsx: trang chính, state activeContentId/currentJobId/body, edit mode load từ GET content+activeVersion, navigate replace khi tạo mới
 - GeneratePanel.tsx: form rhf+zod (title/type/persona/brief), create flow (POST→generate), regenerate flow (PATCH title+type+brief+personaId → generate)
 - ContentDisplay.tsx: render body whitespace-pre-wrap, isGenerating spinner, 3 nút Viết lại/Mở rộng/Rút gọn (chỉ hiện khi có body)
@@ -117,9 +127,11 @@
 - Bug fixes: race condition poller (jobId guard), brief+type persist khi regenerate (backend mở PATCH + frontend gửi đủ field + form reset theo id-change)
 
 **[Backend — Day 9 bugfix]**
+
 - content.controller.ts: mở brief + type cho PATCH /content/:id, enum validation VALID_TYPES
 
 **[Frontend — Day 10]**
+
 - Export UI: ExportBar.tsx — 3 nút PDF/DOCX/HTML, loading state riêng từng nút,
   gọi POST /content/:id/export → nhận downloadUrl (presigned) → window.open tải về
   toast.success/error, disabled khi isGenerating
@@ -136,6 +148,7 @@
   thông tin plan + model generate/edit, 3 states (loading/error/empty)
 
 **[Backend/Infra — Day 11]**
+
 - Secrets Manager: bundle JWT_SECRET + DATABASE_URL + GEMINI_API_KEY vào 1 JSON secret (quillo/app-secrets)
   - secrets.ts: loadSecrets() đọc từ SecretsManagerClient, ghi đè process.env
   - Feature flag USE_SECRETS_MANAGER=true/false — false không đụng LocalStack (dev an toàn)
@@ -164,6 +177,7 @@
   - export-env.sh: helper load env vars cho LocalStack restart (gitignored)
 
 **[Backend/Infra — Day 12 — Code Artifacts]**
+
 - Lambda worker bundle: esbuild.lambda.mjs (bundle-all strategy, không external), build-lambda.sh → infrastructure/outputs/worker-lambda.zip (2.2MB, 1 file index.js)
 - backend/mock-aws.js: mock CloudWatchLogs cho esbuild bundle (tránh resolve lỗi winston-cloudwatch)
 - Dockerfile multi-stage: builder (npm install + prisma generate + tsc) → runtime (node:20-slim, non-root user, HEALTHCHECK). Docker build verified ✅
@@ -174,6 +188,7 @@
 - Installed: @aws-sdk/client-cloudwatch-logs (missing dep winston-cloudwatch), @types/aws-lambda, esbuild (devDep)
 
 **[Infra/Deploy — Day 12-13]**
+
 - VPC: 2 AZ, public/private subnet, IGW, NAT Gateway, route tables, 3 SGs (alb/ec2/rds)
 - RDS PostgreSQL 16 Multi-AZ (db.t3.micro, quillo-prod-db) — available ✅
 - SQS prod: quillo-generation-queue-prod + DLQ, RedrivePolicy, VisibilityTimeout 300s
@@ -186,11 +201,13 @@
 - ASG: min=2 max=4, Launch Template (Amazon Linux 2023, t3.micro, user-data pull ECR image), ELB health check, CPU target tracking 60%
 
 **[Bug fixes — Day 12-13]**
+
 - push-image.sh: thêm --platform linux/amd64 (fix arm64 vs amd64 mismatch trên Mac M-series)
 - database.ts: pg.Pool khởi tạo lazy qua Proxy — fix DATABASE_URL=undefined khi module load trước loadSecrets()
 - IAM quillo-ec2-role: thiếu logs:DescribeLogStreams + logs:PutRetentionPolicy (winston-cloudwatch cần) — chưa fix
 
 **[Infra/Deploy — Day 13]**
+
 - IAM quillo-ec2-role: thêm logs:DescribeLogStreams + logs:PutRetentionPolicy (fix AccessDenied winston-cloudwatch)
 - database.ts: thêm ssl: { rejectUnauthorized: false } vào pg.Pool
 - Root cause: RDS force_ssl=1 reject unencrypted connection, pg.Pool không truyền ssl config
@@ -199,16 +216,34 @@
 - prisma migrate deploy lên RDS (Task 13.3) qua SSM port-forwarding (local port 5433 -> rds port 5432)
 - Deploy Lambda worker (Task 13.4): setup-lambda.sh + SQS event source mapping thành công, verify test job OK.
 - IAM role riêng quillo-lambda-role, Security Group riêng quillo-lambda-sg (không dùng chung EC2)
+- CloudFront BLOCKED (AWS account chưa verify, lỗi AccessDenied) → pivot sang:
+  S3 Static Website Hosting (quillo-frontend-prod) + Cloudflare free proxy (CDN+SSL)
+- Fix Cloudflare↔S3 Host header mismatch (NoSuchBucket) bằng Cloud Connector
+  (free trên mọi Cloudflare plan) — không cần rename bucket
+- Domain wiring: quillo.khuongle.site (frontend), quillo-api.khuongle.site (backend)
+  — dùng subdomain 1 cấp vì Cloudflare Universal SSL free chỉ phủ wildcard 1 cấp
+  (api.quillo.khuongle.site 2 cấp bị ERR_SSL_VERSION_OR_CIPHER_MISMATCH)
+- Bug fix: Launch Template UserData sync lỗi (regex sai cú pháp) khiến
+  ALLOWED_ORIGINS vẫn giữ placeholder cũ → CORS preflight fail /auth/register
+  → fix UserData đúng, Launch Template Version 6, Instance Refresh, verify 10/10
+- Task 13.6: WAF WebACL "quillo-waf" associate với ALB
+- CloudWatch: Log Groups (/quillo/api, /quillo/worker, /aws/waf/logs) + Metric
+  Filter (WAF blocked requests) + 3 Alarms (API error rate, Worker error rate,
+  WAF blocked) + SNS topic quillo-prod-alerts
+- E2E verified qua domain thật: register → login → generate → export, WAF block
+  test (XSS payload → 403)
 
 ---
 
-
 ## Tiếp theo 🟡
 
-1. CloudFront + frontend deploy — S3 quillo-frontend-prod (Task 13.5)
-2. WAF associate với ALB + setup-cloudwatch.sh confirm SNS (Task 13.6)
-3. Domain DNS: api.domain → ALB, app.domain → CloudFront
-4. Smoke test full flow production
+1. **[Verify]** SNS subscription dùng email lấy tự động từ `git config` —
+   xác nhận đúng email mong muốn nhận alert, confirm link trong inbox
+2. CI/CD: GitHub Actions pipeline (lint → test → build → deploy) — Day 14
+3. Demo prep: seed production data, test lại full flow lần cuối
+4. README cập nhật: hướng dẫn deploy + architecture diagram — Day 14
+5. (Optional) Task 13.6-follow-up: ACM + HTTPS listener cho ALB (Full end-to-end
+   TLS) — không còn bắt buộc, hiện dùng Cloudflare Flexible mode
 
 ---
 
@@ -216,48 +251,57 @@
 
 - LocalStack reset sau docker compose restart → cần chạy: source export-env.sh && bash infrastructure/scripts/localstack-init.sh
 - DLQ RedrivePolicy trên LocalStack không verify được (subdomain URL mismatch) — không ảnh hưởng dev workflow
-- WAF associate với ALB chờ Day 12-13
-- CloudWatch alarms + SNS chờ chạy setup-cloudwatch.sh trên real AWS
-- ALLOWED_ORIGINS trong Launch Template vẫn là placeholder CloudFront → cần update sau task CloudFront
+- CloudFront vẫn BLOCKED (AWS account chưa verify) — setup-cloudfront.sh giữ
+  nguyên, dùng lại khi verify xong; hiện dùng Cloudflare thay thế
+- S3 Static Website Hosting: SPA fallback route lạ trả HTTP status 404 (S3
+  không rewrite status như CloudFront) dù nội dung index.html vẫn load đúng
+  — known quirk, không ảnh hưởng chức năng, không cần fix
+- SSL Cloudflare→origin (S3 + ALB) là Flexible mode — không phải full
+  end-to-end TLS, chấp nhận cho scope demo
 
 ---
 
 ## Decisions đã chốt 📌
 
-| Quyết định | Lý do |
-|-----------|-------|
-| Polling 2.5s thay vì WebSocket | Đơn giản hơn, đủ cho bootcamp |
-| Soft delete (status=ARCHIVED) | Giữ history, dễ restore |
-| Prisma v7 + adapter-pg | Không downgrade, học đúng version mới |
-| Redis cache persona 30 phút | Persona ít thay đổi, giảm DB load |
-| Lambda Worker tách khỏi API | Không block request khi AI generate |
-| BedrockRuntimeClient tách endpoint riêng | LocalStack không emulate Bedrock |
-| AWS_REGION=us-east-1 cho Bedrock | Cross-region inference profile us.* chỉ support US regions |
-| Export sync (không qua SQS) | Text export nhanh, không cần queue |
-| S3 forcePathStyle: true | LocalStack không support virtual-hosted style |
-| BEDROCK_MOCK flag | Unblock pipeline, tắt khi có account thật, không sửa code |
-| checkQuota() dùng chung API + worker | Không duplicate logic, tắt DLQ retry khi quota exceeded |
-| Role check trong controller (không middleware) | Trả 403 message rõ ràng, flexible hơn |
-| react-hook-form + zod cho mọi form | Type-safe validation, ít boilerplate, tái dùng pattern cho PersonaEditor Day 8 |
-| navigate(from, { replace: true }) sau login | Tránh Back button quay lại /login, UX chuẩn |
-| Server-side filter cho GET /content | Backend hỗ trợ params type/status/campaignId, tránh load toàn bộ data về client |
-| useJobPoller trả về jobId trong state | Guard pollState.jobId===currentJobId tránh race condition stale status |
-| PATCH /content/:id mở thêm brief+type | brief/type cần persist khi regenerate, không chỉ khi tạo mới |
-| Form reset theo id-change (useRef) | Tránh refetch sau generate đè giá trị user đang nhập |
-| brief+type gửi trong PATCH khi regenerate | Backend đọc từ DB trước khi generate, phải lưu đúng |
-| Export sync trả downloadUrl | Backend trả presigned URL trực tiếp trong response body field `downloadUrl` |
-| campaignId optional trong GeneratePanel | Campaign không bắt buộc, gửi null nếu không chọn |
-| CampaignList dùng useState cho inline form | Form 2 field đơn giản, không cần react-hook-form/zod |
-| AI_PROVIDER flag + provider abstraction | Bedrock cần charge để unlock — tách providers/ thành bedrock/gemini/mock, dispatcher đọc AI_PROVIDER env, worker không đổi |
-| Gemini 2.5 Flash cho generate, Flash-Lite cho edit | Free tier không cần thẻ, 1500 req/day đủ cho demo, rate limit 15 RPM tương thích pipeline async SQS |
-| USE_SECRETS_MANAGER feature flag | false = đọc .env (dev), true = fetch Secrets Manager (prod) — pattern giống BEDROCK_MOCK |
-| Dynamic import sau loadSecrets() | Tránh module-load race condition: config/prisma/jwt chỉ evaluate sau khi secret nạp xong |
-| localstack-init.sh đọc từ env | Không hardcode secret trong script, đọc JWT_SECRET/DATABASE_URL/GEMINI_API_KEY từ shell env |
-| Secret bundle 1 JSON object | 1 API call lấy hết JWT+DB+Gemini, đơn giản hơn 3 secret riêng lẻ |
-| aws --endpoint-url thay awslocal | awslocal cần cài pip riêng, không có sẵn — dùng aws --endpoint-url http://localhost:4566 cho mọi LocalStack command |
-| CloudWatch log groups local (LocalStack) | Verify dev logging path trước khi deploy, không cần real AWS |
-| WAF scope REGIONAL (không CLOUDFRONT) | Gắn vào ALB — nếu sau thêm CloudFront thì tạo thêm WebACL scope CLOUDFRONT ở us-east-1 |
-| infrastructure/outputs/ gitignored | ARN/ID thật không commit lên git, chỉ lưu local |
-| pg.Pool ssl: rejectUnauthorized:false | RDS force_ssl=1 bắt buộc encryption, chấp nhận cert AWS tự ký không cần CA bundle riêng (đủ cho scope demo) |
-| Lambda role/SG riêng biệt, không dùng chung EC2 | Least privilege theo service, giảm blast radius nếu 1 role bị compromise |
-| winston-cloudwatch bypass trong Lambda | Lambda runtime tự forward stdout → CloudWatch Logs, transport riêng dư thừa + gây lỗi missing aws-sdk v2 |
+| Quyết định                                         | Lý do                                                                                                                      |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Polling 2.5s thay vì WebSocket                     | Đơn giản hơn, đủ cho bootcamp                                                                                              |
+| Soft delete (status=ARCHIVED)                      | Giữ history, dễ restore                                                                                                    |
+| Prisma v7 + adapter-pg                             | Không downgrade, học đúng version mới                                                                                      |
+| Redis cache persona 30 phút                        | Persona ít thay đổi, giảm DB load                                                                                          |
+| Lambda Worker tách khỏi API                        | Không block request khi AI generate                                                                                        |
+| BedrockRuntimeClient tách endpoint riêng           | LocalStack không emulate Bedrock                                                                                           |
+| AWS_REGION=us-east-1 cho Bedrock                   | Cross-region inference profile us.\* chỉ support US regions                                                                |
+| Export sync (không qua SQS)                        | Text export nhanh, không cần queue                                                                                         |
+| S3 forcePathStyle: true                            | LocalStack không support virtual-hosted style                                                                              |
+| BEDROCK_MOCK flag                                  | Unblock pipeline, tắt khi có account thật, không sửa code                                                                  |
+| checkQuota() dùng chung API + worker               | Không duplicate logic, tắt DLQ retry khi quota exceeded                                                                    |
+| Role check trong controller (không middleware)     | Trả 403 message rõ ràng, flexible hơn                                                                                      |
+| react-hook-form + zod cho mọi form                 | Type-safe validation, ít boilerplate, tái dùng pattern cho PersonaEditor Day 8                                             |
+| navigate(from, { replace: true }) sau login        | Tránh Back button quay lại /login, UX chuẩn                                                                                |
+| Server-side filter cho GET /content                | Backend hỗ trợ params type/status/campaignId, tránh load toàn bộ data về client                                            |
+| useJobPoller trả về jobId trong state              | Guard pollState.jobId===currentJobId tránh race condition stale status                                                     |
+| PATCH /content/:id mở thêm brief+type              | brief/type cần persist khi regenerate, không chỉ khi tạo mới                                                               |
+| Form reset theo id-change (useRef)                 | Tránh refetch sau generate đè giá trị user đang nhập                                                                       |
+| brief+type gửi trong PATCH khi regenerate          | Backend đọc từ DB trước khi generate, phải lưu đúng                                                                        |
+| Export sync trả downloadUrl                        | Backend trả presigned URL trực tiếp trong response body field `downloadUrl`                                                |
+| campaignId optional trong GeneratePanel            | Campaign không bắt buộc, gửi null nếu không chọn                                                                           |
+| CampaignList dùng useState cho inline form         | Form 2 field đơn giản, không cần react-hook-form/zod                                                                       |
+| AI_PROVIDER flag + provider abstraction            | Bedrock cần charge để unlock — tách providers/ thành bedrock/gemini/mock, dispatcher đọc AI_PROVIDER env, worker không đổi |
+| Gemini 2.5 Flash cho generate, Flash-Lite cho edit | Free tier không cần thẻ, 1500 req/day đủ cho demo, rate limit 15 RPM tương thích pipeline async SQS                        |
+| USE_SECRETS_MANAGER feature flag                   | false = đọc .env (dev), true = fetch Secrets Manager (prod) — pattern giống BEDROCK_MOCK                                   |
+| Dynamic import sau loadSecrets()                   | Tránh module-load race condition: config/prisma/jwt chỉ evaluate sau khi secret nạp xong                                   |
+| localstack-init.sh đọc từ env                      | Không hardcode secret trong script, đọc JWT_SECRET/DATABASE_URL/GEMINI_API_KEY từ shell env                                |
+| Secret bundle 1 JSON object                        | 1 API call lấy hết JWT+DB+Gemini, đơn giản hơn 3 secret riêng lẻ                                                           |
+| aws --endpoint-url thay awslocal                   | awslocal cần cài pip riêng, không có sẵn — dùng aws --endpoint-url http://localhost:4566 cho mọi LocalStack command        |
+| CloudWatch log groups local (LocalStack)           | Verify dev logging path trước khi deploy, không cần real AWS                                                               |
+| WAF scope REGIONAL (không CLOUDFRONT)              | Gắn vào ALB — nếu sau thêm CloudFront thì tạo thêm WebACL scope CLOUDFRONT ở us-east-1                                     |
+| infrastructure/outputs/ gitignored                 | ARN/ID thật không commit lên git, chỉ lưu local                                                                            |
+| pg.Pool ssl: rejectUnauthorized:false              | RDS force_ssl=1 bắt buộc encryption, chấp nhận cert AWS tự ký không cần CA bundle riêng (đủ cho scope demo)                |
+| Lambda role/SG riêng biệt, không dùng chung EC2    | Least privilege theo service, giảm blast radius nếu 1 role bị compromise                                                   |
+| winston-cloudwatch bypass trong Lambda             | Lambda runtime tự forward stdout → CloudWatch Logs, transport riêng dư thừa + gây lỗi missing aws-sdk v2                   |
+| S3 Static Website Hosting thay CloudFront | AWS account bị chặn tạo CloudFront resource, cần giải pháp free/nhanh không đợi AWS Support |
+| Cloudflare free proxy thay CloudFront | Domain cá nhân sẵn có trên Cloudflare, free plan đủ dùng cho scope demo |
+| Cloud Connector fix Host header S3 | Free mọi plan, tránh phải rename bucket theo domain hoặc viết Worker code |
+| Subdomain 1 cấp (quillo-api.*) thay vì api.quillo.* | Cloudflare Universal SSL free chỉ phủ wildcard 1 cấp, tránh trả phí Advanced Certificate Manager |
+| SNS thay SQS+Lambda cho alerting | Passive alert qua email, không cần polling/code thêm, đủ rẻ và đơn giản cho demo |

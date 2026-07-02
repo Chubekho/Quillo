@@ -158,3 +158,79 @@ Files thay đổi:
 docs/INFRASTRUCTURE_CONTEXT.md — Cập nhật mục Deployment Scripts
 Kết quả: DONE
 Ghi chú: Đã bám sát hoàn toàn chuỗi task 12.3 đến 13.4 để list trình tự chạy.
+
+### [Task day 13.5.0 - 2026-07-01 20:52] Start lại RDS + ASG cho Task 13.5
+Làm gì: Start RDS instance quillo-prod-db và scale ASG quillo-api-asg lên 2 instances, kiểm tra health check và smoke test thành công.
+Files thay đổi: (không thay đổi code)
+Kết quả: DONE
+Ghi chú: RDS status trước là 'starting', sau đó đợi khoảng 5-6 phút chuyển 'available'. Target Group có 2 targets healthy sau 6 phút polling. ALB smoke test HTTP 200 trả về `{"status":"ok","services":{"postgres":"up","api":"up"}}`.
+
+### [Task day 13.5 - 2026-07-01 21:01] Deploy CloudFront + frontend
+Làm gì: Deploy frontend lên S3, setup CloudFront distribution (OAI do AWS CLI cũ không hỗ trợ OAC), update backend ALLOWED_ORIGINS.
+Files thay đổi:
+- infrastructure/scripts/setup-cloudfront.sh — script mới tạo OAI + distribution + bucket policy
+- frontend/.env.production — tạo từ example
+Kết quả: BLOCKED
+Ghi chú: Việc tạo CloudFront distribution thất bại với lỗi `AccessDenied: Your account must be verified before you can add new CloudFront resources`. Cần verify account với AWS Support trước khi có thể deploy CloudFront. Các bước tiếp theo (upload S3, update ALB CORS, smoke test) bị chặn.
+
+### [Task day 13.5 (revised, part 1) - 2026-07-01 21:16] S3 Static Website Hosting setup
+Làm gì: CloudFront blocked → S3 Static Website Hosting làm origin tạm, chờ Cloudflare DNS setup ở Part 2.
+Files thay đổi:
+- infrastructure/scripts/deploy-frontend.sh — sửa dòng 26-30 và 60-66 để skip CloudFront invalidation nếu thiếu biến CF_DISTRIBUTION_ID
+- infrastructure/outputs/s3-website-endpoint.txt — endpoint mới
+Kết quả: DONE
+Ghi chú: setup-cloudfront.sh giữ nguyên, dùng lại sau khi account verify. ALLOWED_ORIGINS CHƯA update — chờ Part 2.
+
+### [Task day 13.5 (revised, part 2) - 2026-07-01 21:55] Wire domain qua Cloudflare
+Làm gì: Verify domain live trước khi rebuild và config CORS.
+Files thay đổi: (không có)
+Kết quả: BLOCKED
+Ghi chú: Domain frontend (https://quillo.khuongle.site/) load thành công, nhưng backend API domain (https://api.quillo.khuongle.site/api/v1/health) bị lỗi SSL handshake (curl exit code 35). Cloudflare có thể đang chờ cấp chứng chỉ Edge Certificate cho domain API. Đã tự động retry 3 lần nhưng vẫn fail. Dừng thực thi task theo yêu cầu để chờ DNS/SSL propagate hoàn toàn trước khi làm tiếp.
+
+### [Task day 13.5 (revised, part 2) - 2026-07-01 22:30] Wire domain qua Cloudflare (RESUMED)
+Làm gì: Rebuild frontend trỏ API domain Cloudflare, update ALLOWED_ORIGINS, instance refresh, verify full flow qua domain thật.
+Files thay đổi:
+- frontend/.env.production — VITE_API_BASE_URL đổi sang https://quillo-api.khuongle.site/api/v1
+- Launch Template version mới — ALLOWED_ORIGINS=https://quillo.khuongle.site
+Kết quả: DONE
+Ghi chú:
+- Frontend: https://quillo.khuongle.site
+- Backend API: https://quillo-api.khuongle.site (đổi từ api.quillo.khuongle.site do giới hạn Cloudflare Universal SSL free chỉ phủ subdomain 1 cấp)
+- Lưu ý Resume: Task trước đó bị gián đoạn do mất mạng sau khi update Launch Template và trigger Instance Refresh. Đã resume thành công ở Bước 4 sau khi xác minh Frontend đã build/deploy và Instance Refresh đã trạng thái `Successful`.
+- Smoke test POST `/auth/login` qua domain thật thành công, nhận JWT token đầy đủ, không dính lỗi CORS.
+- Task 13.6 (ACM + ALB HTTPS listener) không còn bắt buộc, có thể làm sau cho Full SSL end-to-end nếu cần.
+
+### [Task day 13.5.1 - 2026-07-01 23:05] Fix CORS fail trên /auth/register
+Làm gì: Diagnose and fix CORS preflight error trên route register.
+Files thay đổi: (không có thay đổi app.ts)
+Kết quả: DONE
+Ghi chú: Root cause là do **Launch Template UserData chưa được update đúng**. Trong quá trình chạy Part 2 trước đó, lệnh regex để sửa file UserData bị sai cú pháp, khiến biến `ALLOWED_ORIGINS` trong Launch Template Version 5 vẫn mang giá trị cũ (`https://placeholder.cloudfront.net`). Cả 2 instances trong ASG đều chạy với biến môi trường lỗi này. Curl POST báo success vì `curl` bỏ qua CORS preflight, nhưng trình duyệt đã đúng khi chặn preflight OPTIONS vì không có header `Access-Control-Allow-Origin`.
+Cách fix: Đã update thủ công và chính xác file UserData để trỏ `ALLOWED_ORIGINS=https://quillo.khuongle.site`, tạo Launch Template Version 6, và start Instance Refresh.
+Kết quả: Verify vòng lặp curl OPTIONS 10/10 lần đều PASS ổn định, header `access-control-allow-origin: https://quillo.khuongle.site` đã xuất hiện. Browser test sẽ hoạt động hoàn hảo.
+
+### [Task day 13.6 - 2026-07-02 09:02] Associate WAF WebACL với ALB, setup CloudWatch
+Làm gì:
+- Associate WebACL "quillo-prod-waf" (tên chính xác là quillo-waf) với ALB
+- Tạo Log Groups: /quillo/api, /quillo/worker, /aws/waf/logs
+- Tạo Metric Filter trích xuất số lượng req bị WAF block
+- Alarms + SNS Topic: API Error Rate, Worker Error Rate, WAF Blocked Requests
+- Test thử tạo API errors thật → trigger Alarm
+- (Bonus) Simulate gửi >500 req bị WAF block trong 1h bằng xargs command
+- Confirm SNS Subscription
+
+Files thay đổi:
+- infrastructure/scripts/setup-cloudwatch.sh — script mới
+- infrastructure/outputs/sns-alert-topic.txt — tạo mới, chứa SNS topic ARN
+
+Kết quả: DONE
+
+Ghi chú:
+- Lý do dùng SNS topic riêng cho alert thay vì dùng chung SQS DLQ: SQS yêu cầu polling liên tục, Lambda tốn phí hơn, phải viết thêm code; Còn SNS cho phép subscribe bằng email/SMS, nhận alerts thụ động mà không cần "lắng nghe" liên tục nên đơn giản và rẻ hơn cho mục đích này.
+- Mã nguồn phần bonus generate 550 req fake được tự động hóa bằng Bash (dùng `seq` kết hợp `xargs` với tham số concurrency `-P 50`, curl payload XSS parameter trigger WAF rule chặn và trả về HTTP 403). Alarm đã được tự động disable ngay sau test để không bị spam.
+- Lệnh SNS đã được tạo với email lấy từ git config, cần user tự click Confirm trong Inbox.
+
+### [Task day 13.7 - 2026-07-02 09:44] Cập nhật INFRASTRUCTURE_CONTEXT.md
+Xác nhận đã update tài liệu hạ tầng:
+- Cập nhật trạng thái WAF associated với ALB (DONE).
+- Cập nhật CloudWatch Alarms và SNS Topic (live).
+- Cập nhật luồng Deployment Scripts cho các Task 13.5 và 13.6.
